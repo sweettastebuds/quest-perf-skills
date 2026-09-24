@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "quest-perf",
+  "displayName": "Quest Performance",
+  "version": "0.1.0",
+  "description": "Meta Quest 2 and Quest 3/3S platform performance for Unity apps: CPU/GPU/pacing triage, per-device budgets and quality tiers, frame pacing and thermals, resolution and foveation, Application SpaceWarp, compositor layers, mixed-reality costs, Meta SDK choices, and profiling tools (OVR Metrics Tool, MQDH, Perfetto, RenderDoc Meta Fork, ovrgpuprofiler).",
+  "author": {
+    "name": "Michael Fernandez"
+  },
+  "keywords": ["meta-quest", "quest-2", "quest-3", "vr", "unity", "performance", "frame-pacing", "foveation", "spacewarp"]
+}

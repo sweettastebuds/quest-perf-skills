@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "unity-perf",
+  "displayName": "Unity URP Performance (Quest)",
+  "version": "0.1.0",
+  "description": "Unity 2021.3 LTS through Unity 6.x URP performance for Meta Quest: version and feature matrix, upgrade risks, URP asset and renderer settings, Render Graph on tile GPUs, draw calls and batching, shaders and PSO hitches, lighting, CPU/GC/scripting, memory and assets, and the profiling workflow.",
+  "author": {
+    "name": "Michael Fernandez"
+  },
+  "keywords": ["unity", "urp", "unity-6", "render-graph", "srp-batcher", "shaders", "il2cpp", "quest", "performance"]
+}
