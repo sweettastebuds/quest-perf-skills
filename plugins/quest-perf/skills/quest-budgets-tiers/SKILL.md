@@ -129,7 +129,7 @@ per-source table (with the stale pre-2023 figures) is in
   textures count against the same PSS. A dynamic-resolution maximum of 1.6 on Quest
   3/3S allocates 2688x2816 per eye at startup (Q2-024 / Q2-090).
 
-**Memory** (PSS: Q2-041 to 043, memory-ram / po-memory-ram; RAM: Q2-001 compare-devices [doc], Q2-003 Wikipedia [community]) `Quest 2` `Quest 3/3S`
+**Memory** (PSS: Q2-041 to 043, memory-ram / po-memory-ram; RAM: Quest 3/3S from Q2-001 compare-devices [doc]; Quest 2 from Q2-003 Wikipedia [community], since compare-devices no longer lists Quest 2) `Quest 2` `Quest 3/3S`
 
 | Headset | RAM | App PSS limit | GDC 2026 working target (QUEST-GF1-003) |
 |---|---|---|---|
@@ -266,7 +266,7 @@ is owned by `unity-perf:unity-urp-settings`.
   `quest2MinDynamicResolutionScale` / `quest3MinDynamicResolutionScale` to 0.85 in the
   Inspector (Q3-050, QUEST-GF2-005). Minimum Unity versions and URP issues:
   `quest-perf:quest-resolution-foveation`.
-- Effect: unlocks GPU L5 (opportunistic; requires dynamic resolution) and makes thermal
+- Effect: unlocks GPU L5 (opportunistic; on Quest 2 it requires dynamic resolution, on Quest 3/3S level trading +1 also grants it) and makes thermal
   throttling lower resolution instead of dropping frames (Q2-029, Q2-050, Q3-049).
   Mainly a variance fix.
 - Quality cost: at the 0.85 minimum, clarity drops visibly on Quest 3/3S, whose scale

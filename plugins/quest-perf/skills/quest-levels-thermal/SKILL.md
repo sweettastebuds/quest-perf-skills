@@ -107,10 +107,10 @@ Conflicts to surface, not resolve (details in the reference file): Quest 3/3S pe
 
 ### 2. Turn on dynamic resolution so GPU L5 is a bonus and throttling costs pixels, not frames
 
-- **Change:** OVRManager > Enable Dynamic Resolution (off by default), or `OVRManager.instance.enableDynamicResolution = true;` (Q4-006). Minimum versions: Unity 2021.3.45f1 / 2022.3.49f1 / 6000.0.25f1 with Oculus XR 3.3.0+ or OpenXR 1.12.1+ (Q2-025). Setup, URP known issues and snapping: `quest-perf:quest-resolution-foveation`.
+- **Change:** OVRManager > Enable Dynamic Resolution (off by default), or `OVRManager.instance.enableDynamicResolution = true;` (Q4-006). Minimum versions (from the Meta XR SDK's `OVRManager.cs`, not the dynamic-resolution page): OpenXR loader needs Unity 2021.3.45f1 / 2022.3.49f1 / 6000.0.25f1; Oculus loader on Vulkan needs Oculus XR 3.3.0+ (or OpenXR 1.12.1+) (Q2-025). Setup, URP known issues and snapping: `quest-perf:quest-resolution-foveation`.
 - **Effect:** without it, GPU L5 is never granted on Quest 2 (Q2-048). On Quest 3/3S the availability table also allows L5 with trading +1 (Q2-049), while the Boost page says L5 needs dynamic resolution on every model (A1-034). Conflict; see Q4-C1 in [level-tables.md](references/level-tables.md). With it, a thermal drop from L5 to L4 lowers render scale instead of dropping frames (Q2-050, A3-086). Mainly cuts stale-frame bursts late in the session.
 - **Cost:** resolution softens while hot. Eye textures are allocated at the maximum scale, so memory follows the maximum (A3-086). Disable it while profiling (Q3-051).
-- **Tags:** `Quest 2` `Quest 3/3S` `Unity 2021.3.45f1+ / 2022.3.49f1+ / 6000.0.25f1+` `Oculus XR 3.3.0+ or OpenXR 1.12.1+` `GLES` `Vulkan`; **Consistency**, Throughput.
+- **Tags:** `Quest 2` `Quest 3/3S` `Unity 2021.3.45f1+ / 2022.3.49f1+ / 6000.0.25f1+ (OpenXR loader)` `Oculus XR 3.3.0+ (Oculus loader, Vulkan)` `GLES` `Vulkan`; **Consistency**, Throughput.
 
 ### 3. Request the lowest level that holds frame rate; drop it in light scenes
 

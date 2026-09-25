@@ -33,7 +33,7 @@ Sources: Q2-017 / Q3-001, Q2-018, Q2-024 / Q2-090 (SDK 207 source mirror; confir
 - Scales the viewport from GPU utilisation: lowers resolution when frames start going stale, raises it with headroom; textures allocated once at max (Q3-048).
 - Setup: OVRCameraRig > OVR Manager > Enable Dynamic Resolution; `quest2Min/MaxDynamicResolutionScale`, `quest3Min/MaxDynamicResolutionScale`; runtime `OVRManager.instance.enableDynamicResolution` (Q3-050). Off by default (Q4-006).
 - When enabled, OVRManager sets `eyeTextureResolutionScale` and URP `renderScale` to the max (Q2-024).
-- Minimum versions: Unity 2021.3.45f1, 2022.3.49f1 or 6000.0.25f1; Oculus XR 3.3.0+ or OpenXR 1.12.1+; Meta recommends URP 14.0.9+ (Q2-025, G1-045).
+- Minimum versions, from the version checks in the Meta XR SDK's `OVRManager.cs` (the dynamic-resolution page itself lists only 6000.0.25f1, as a distortion-bug fix): OpenXR loader, Unity 2021.3.45f1, 2022.3.49f1 or 6000.0.25f1; Oculus loader on Vulkan, Oculus XR 3.3.0+ (or OpenXR 1.12.1+). Meta recommends URP 14.0.9+ (Q2-025, G1-045).
 - Prerequisite for GPU level 5; during thermal events the OS lowers render scale instead of dropping frames (Q3-049, Q2-050). Level rules: `quest-perf:quest-levels-thermal`.
 - With dynamic foveation also on, foveation rises first, resolution drops after (Q3-031).
 - No published thresholds, step size or hysteresis (Q3-061). Measure: log `SF`, GPU% and `Stale` at 1 Hz while ramping GPU load; record the GPU% at which SF falls and recovery speed.
