@@ -87,7 +87,7 @@ From A3-066, G3-084 and GLES3-GF2-008. [verify on device]
 - https://developer.qualcomm.com/forum/qdn-forums/software/snapdragon-profiler/66963 , /67580 , /68286 (via web.archive.org) [community]
 - https://mysupport.qualcomm.com/supportforums/s/question/0D5dK000009EniESAS/snapdragon-profiler-not-able-to-capture-anything-on-meta-quest-33s [community]
 - https://developer.qualcomm.com/forum/qdn-forums/software/snapdragon-profiler/69910 [community]
-- https://peterthor.se/tag/qualcomm-snapdragon-profiler/ [community]
+- https://peterthor.se/tag/qualcomm-snapdragon-profiler/ [community] (site unreachable on 2026-09-24; content seen via search snippets only)
 - https://docs.mesa3d.org/drivers/freedreno.html [community]
 
 All accessed 2026-09-24.

@@ -301,7 +301,7 @@ Other device limits live with their topics:
   - Meta says Vulkan is recommended and GLES is supported but legacy, with no new features (G1-028).
 
   GLES-specific tuning therefore has a limited shelf life.
-  - Source: https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/index.html ; https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/oculus-plugin.html ; https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.16/manual/index.html ; https://developers.meta.com/horizon/documentation/unity/os-vulkan-opengl/ (accessed 2026-09-24) · Applies to: OculusXR 4.x; Unity 2021.3–6000.6; OpenXR 1.x · Evidence: [doc]
+  - Source: https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/index.html ; https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/index.html ; https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.16/manual/index.html ; https://developers.meta.com/horizon/documentation/unity/os-vulkan-opengl/ (accessed 2026-09-24) · Applies to: OculusXR 4.x; Unity 2021.3–6000.6; OpenXR 1.x · Evidence: [doc]
   - Notes:
     - G1-024 was tagged [C] and G2-093 [T].
     - The GLES-only Low Overhead Mode lives in this plugin (G1-043 / G2-079), so the deprecation strands it.
@@ -360,7 +360,7 @@ Other device limits live with their topics:
   - Source: https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.19/manual/features/metaquest.html ; https://developers.meta.com/horizon/documentation/unity/unity-openxr-settings-quest/ (accessed 2026-09-24) · Applies to: OpenXR 1.16+ with AppSW; Vulkan · Evidence: [doc]
 
 - **G1-034** Eye-Tracked Foveated Rendering (ETFR) is Vulkan-only and needs Multiview. The Oculus plugin docs add Quest Pro and ARM64 as requirements. [T]
-  - Source: https://developers.meta.com/horizon/documentation/unity/unity-eye-tracked-foveated-rendering/ ; https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/oculus-plugin.html (accessed 2026-09-24) · Applies to: Quest Pro only (eye tracking); Vulkan · Evidence: [doc]
+  - Source: https://developers.meta.com/horizon/documentation/unity/unity-eye-tracked-foveated-rendering/ ; https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/index.html (accessed 2026-09-24) · Applies to: Quest Pro only (eye tracking); Vulkan · Evidence: [doc]
   - Notes:
     - The Meta page tells you to keep Vulkan as the only entry in the Graphics APIs list.
     - Out of scope for Quest 2/3/3S.
@@ -376,13 +376,13 @@ Other device limits live with their topics:
     - ReadPixels, Blit or TexImage on the texture triggers a reconstruction pass.
   - Unity GLES projects cannot enable it without native code.
   - Eye-tracked foveation is Quest Pro only (Vulkan + Multiview + ARM64) and does not apply to Quest 2/3/3S.
-  - Source: https://developers.meta.com/horizon/documentation/unity/unity-fixed-foveated-rendering/ ; https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/oculus-plugin.html ; https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.4/manual/index.html ; https://registry.khronos.org/OpenGL/extensions/QCOM/QCOM_texture_foveated_subsampled_layout.txt ; https://opengles.gpuinfo.org/displayreport.php?id=6387 ; https://opengles.gpuinfo.org/displayreport.php?id=8023 (accessed 2026-09-24) · Applies to: Quest 2, Quest 3/3S; the GL extension is exposed on GLES; the Unity/Meta path is Vulkan-only · Evidence: [doc]
+  - Source: https://developers.meta.com/horizon/documentation/unity/unity-fixed-foveated-rendering/ ; https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/index.html ; https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.4/manual/index.html ; https://registry.khronos.org/OpenGL/extensions/QCOM/QCOM_texture_foveated_subsampled_layout.txt ; https://opengles.gpuinfo.org/displayreport.php?id=6387 ; https://opengles.gpuinfo.org/displayreport.php?id=8023 (accessed 2026-09-24) · Applies to: Quest 2, Quest 3/3S; the GL extension is exposed on GLES; the Unity/Meta path is Vulkan-only · Evidence: [doc]
   - Notes:
     - The deprecated native VrApi FFR page (updated Oct 18, 2024) covered subsampling on Vulkan via `VRAPI_SWAPCHAIN_CREATE_SUBSAMPLED_BIT` (https://developers.meta.com/horizon/documentation/native/android/mobile-ffr/; see G1-044 / G2-062 / G3-053).
     - For the other foveation extension details, see §7.3.
 
 - **G1-036** Late Latching is Vulkan-only in both the Oculus plugin and the OpenXR Meta Quest Support settings. Meta describes its overhead as negligible and recommends it for most apps. [C]
-  - Source: https://developers.meta.com/horizon/documentation/unity/unity-openxr-settings-quest/ ; https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/oculus-plugin.html (accessed 2026-09-24) · Applies to: OpenXR / OculusXR; Vulkan · Evidence: [doc]
+  - Source: https://developers.meta.com/horizon/documentation/unity/unity-openxr-settings-quest/ ; https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/index.html (accessed 2026-09-24) · Applies to: OpenXR / OculusXR; Vulkan · Evidence: [doc]
   - Notes: It is a latency feature, not a throughput one, and is listed here because it is Vulkan-only.
 
 - **G1-037** Symmetric Projection is Vulkan-only and needs Multiview. Meta claims a 5–15% improvement in GPU-bound scenes. [T]
@@ -681,7 +681,7 @@ UUM-149765, the eye-buffer tracker table for Unity 6000.0–6000.7a, is in §3.4
 - **G1-069** Two documented CPU-side levers are API-specific. Neither has a published render-thread ms figure. [T]
   - Legacy graphics jobs: Vulkan-only, up to about 2 FPS (G1-025, G1-026).
   - Low Overhead Mode: GLES-only, in the deprecated Oculus plugin; it skips GLES validation (G1-043 / G2-079).
-  - Source: https://developers.meta.com/horizon/documentation/unity/po-graphics-jobs/ ; https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/oculus-plugin.html (accessed 2026-09-24) · Applies to: Unity 2022.3.35f1+ (graphics jobs); OculusXR 4.x (Low Overhead Mode) · Evidence: [doc]
+  - Source: https://developers.meta.com/horizon/documentation/unity/po-graphics-jobs/ ; https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/index.html (accessed 2026-09-24) · Applies to: Unity 2022.3.35f1+ (graphics jobs); OculusXR 4.x (Low Overhead Mode) · Evidence: [doc]
 
 ### 2.9 Evidence base per decision criterion
 
@@ -1389,7 +1389,7 @@ The UUM-93226 claim that buffer-update-heavy content can favour GLES over Vulkan
 - **G1-043 / G2-079** Low Overhead Mode in the Oculus XR Plugin is GLES-only and makes the driver skip GLES validation. It is the only documented GLES-specific CPU optimisation, and the Unity-side equivalent of `GL_KHR_no_error`. [T]
   - Qualcomm recommends `GL_KHR_no_error` in shipping builds. Quest 2 and Quest 3 expose `GL_KHR_no_error` and `EGL_KHR_create_context_no_error`.
   - Caveat: UUM-102878 reports OES external textures (video, camera) rendering black with Low Overhead Mode in release builds. Closed Won't Fix.
-  - Source: https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/oculus-plugin.html ; https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.4/manual/index.html ; https://docs.qualcomm.com/bundle/publicresource/topics/80-78185-2/mobile_best_practices.html ; https://issuetracker.unity.com/api/v1.0/issues?q=UUM-102878 ; https://opengles.gpuinfo.org/displayreport.php?id=6387 ; https://opengles.gpuinfo.org/displayreport.php?id=8023 (accessed 2026-09-24) · Applies to: OculusXR 4.x (deprecated from Unity 6.5); GLES; Quest 2, Quest 3/3S · Evidence: [doc]
+  - Source: https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/index.html ; https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.4/manual/index.html ; https://docs.qualcomm.com/bundle/publicresource/topics/80-78185-2/mobile_best_practices.html ; https://issuetracker.unity.com/api/v1.0/issues?q=UUM-102878 ; https://opengles.gpuinfo.org/displayreport.php?id=6387 ; https://opengles.gpuinfo.org/displayreport.php?id=8023 (accessed 2026-09-24) · Applies to: OculusXR 4.x (deprecated from Unity 6.5); GLES; Quest 2, Quest 3/3S · Evidence: [doc]
   - Notes:
     - The UUM-102878 caveat is community evidence from the issue tracker.
     - No equivalent was found in the OpenXR Meta Quest Support feature list, so moving to OpenXR may remove this GLES CPU saving. [verify on device] Check the OpenXR feature settings in your plugin version (KU-43).
@@ -1823,7 +1823,7 @@ G3-034 (the precision of `gl_LastFragData` and `gl_LastFragDepthARM`) is in §6.
   - For A/B tests, run `adb shell setprop debug.oculus.foveation.level <n>` together with `debug.oculus.foveation.dynamic 0`. [T]
   - Source: https://developers.meta.com/horizon/documentation/unity/unity-fixed-foveated-rendering/ ; https://developers.meta.com/horizon/documentation/native/android/os-fixed-foveated-rendering/ ; https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.16/manual/features/foveatedrendering.html (accessed 2026-09-24) · Applies to: Quest 2/3/3S, Unity with OVRManager · Evidence: [doc]
   - Notes: Eye-tracked foveation (Quest Pro) is out of scope. Unity's foveation page says Unity 6.5+ deprecates the Oculus XR Plug-in; that is a lead for the XR-plugin topic.
-  - G1-044 (Oculus plugin docs): FFR without the Unity foveation API works only when the app renders directly into the eye textures. Neither Meta's current Unity FFR page nor the plugin docs restrict FFR itself to Vulkan. Sources: https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/oculus-plugin.html ; the deprecated VrApi FFR page https://developers.meta.com/horizon/documentation/native/android/mobile-ffr/ (updated Oct 18, 2024), which covers both GL and Vulkan. The Mobile SDK has been unsupported since Aug 31, 2022.
+  - G1-044 (Oculus plugin docs): FFR without the Unity foveation API works only when the app renders directly into the eye textures. Neither Meta's current Unity FFR page nor the plugin docs restrict FFR itself to Vulkan. Sources: https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/index.html ; the deprecated VrApi FFR page https://developers.meta.com/horizon/documentation/native/android/mobile-ffr/ (updated Oct 18, 2024), which covers both GL and Vulkan. The Mobile SDK has been unsupported since Aug 31, 2022.
   - G2-062 (plugin docs): OculusXR legacy FFR breaks when URP does its default final blit. The OpenXR Meta API path gives no FFR when intermediate render targets are used. No Unity or Meta statement says the SRP Foveation API works on GLES on Quest (GX-C8, KU-10). Sources: https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.4/manual/index.html ; https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.16/manual/features/foveatedrendering.html.
   - Round 2: the Unity 6.3/6.6 support reference and OpenXR 1.19 narrow this down (GLES3-GF2-006, GLES3-GF2-007).
 
@@ -2356,7 +2356,7 @@ All accessed 2026-09-24. Merged from the G1, G2 and G3 notes and the round-1 aud
 - https://docs.unity3d.com/6000.1/Documentation/Manual/xr-multiview-render-regions.html
 - https://docs.unity3d.com/2023.1/Documentation/Manual/WhatsNew20231.html
 - https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/index.html (Oculus XR Plugin 4.5.5; deprecation from Unity 6.5)
-- https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/oculus-plugin.html
+- https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/index.html
 - https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.16/manual/features/metaquest.html
 - https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.19/manual/features/metaquest.html
 - https://docs.unity3d.com/6000.3/Documentation/ScriptReference/Rendering.RenderBufferLoadAction.html

@@ -343,7 +343,7 @@ All accessed 2026-09-24.
 - https://opengles.gpuinfo.org/displayreport.php?id=8023 [measured]
 - https://opengles.gpuinfo.org/displayreport.php?id=7475 [measured]
 - https://opengles.gpuinfo.org/displayreport.php?id=5092 [measured]
-- https://opengles.gpuinfo.org/backend/reports.php [measured]
+- https://opengles.gpuinfo.org/listreports.php [measured]
 - https://docs.qualcomm.com/bundle/publicresource/topics/80-78185-2/mobile_best_practices.html [doc]
 - https://developers.meta.com/horizon/documentation/unity/enable-multiview/ [doc]
 - https://developers.meta.com/horizon/documentation/unity/po-advanced-gpu-pipelines/ [doc]
@@ -361,7 +361,7 @@ All accessed 2026-09-24.
 - https://docs.unity3d.com/6000.3/Documentation/ScriptReference/SystemInfo-supportsMultiview.html [doc]
 - https://docs.unity3d.com/6000.6/Documentation/Manual/xr-foveated-rendering-support.html [doc]
 - https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.4/manual/index.html [doc]
-- https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/oculus-plugin.html [doc]
+- https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/index.html [doc]
 - https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.16/manual/index.html [doc]
 - https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.19/manual/features/foveatedrendering.html [doc]
 - https://github.com/Unity-Technologies/Graphics/blob/master/Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl [doc] (source code)

@@ -341,7 +341,7 @@ All accessed 2026-09-24.
 - https://opengles.gpuinfo.org/displayreport.php?id=8023 [community]
 - https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.4/manual/index.html [doc]
 - https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/index.html [doc]
-- https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/oculus-plugin.html [doc] (returned 404 on a re-check the same day; the 4.4 page carries the same Low Overhead Mode text)
+- https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/index.html [doc] (returned 404 on a re-check the same day; the 4.4 page carries the same Low Overhead Mode text)
 - https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/changelog/CHANGELOG.html [doc]
 - https://issuetracker.unity.com/api/v1.0/issues?q=UUM-102878 [community]
 - https://issuetracker.unity.com/api/v1.0/issues?q=UUM-149765 [community]
@@ -374,4 +374,4 @@ All accessed 2026-09-24.
 - https://docs.unity3d.com/6000.3/Documentation/Manual/vulkanapi-graphics-jobs-configuration.html [doc] (G1-025)
 - https://developers.meta.com/horizon/blog/vulkan-support-for-oculus-quest-in-unity-experimental/ [doc] (G1-047; stale, 2020)
 - https://mysupport.qualcomm.com/supportforums/s/question/0D5dK000009EniESAS/snapdragon-profiler-not-able-to-capture-anything-on-meta-quest-33s [community] (G3-085)
-- https://peterthor.se/tag/qualcomm-snapdragon-profiler/ [community] (G3-085)
+- https://peterthor.se/tag/qualcomm-snapdragon-profiler/ [community] (site unreachable on 2026-09-24; content seen via search snippets only) (G3-085)

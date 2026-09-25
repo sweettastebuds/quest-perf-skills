@@ -103,6 +103,6 @@ All accessed 2026-09-24.
 - https://docs.qualcomm.com/bundle/publicresource/topics/80-78185-2/mobile_best_practices.html [doc]
 - https://docs.qualcomm.com/bundle/publicresource/topics/80-78185-2/sdp.html [doc]
 - https://mysupport.qualcomm.com/supportforums/s/question/0D5dK000009EniESAS/snapdragon-profiler-not-able-to-capture-anything-on-meta-quest-33s [community]
-- https://peterthor.se/tag/qualcomm-snapdragon-profiler/ [community]
+- https://peterthor.se/tag/qualcomm-snapdragon-profiler/ [community] (site unreachable on 2026-09-24; content seen via search snippets only)
 - https://developer.android.com/agi/supported-devices [doc]
 - https://developer.android.com/agi/frame-trace/frame-profiler [doc]

@@ -1413,7 +1413,7 @@ Render Graph merging rules, load/store audit, on-tile post-processing and the pr
     - Source: https://docs.unity3d.com/2022.3/Documentation/Manual/batch-renderer-group.html (accessed 2026-09-24) · Applies to: 2021.3 (experimental), 2022.3+ · Evidence: [doc]
     - Notes: Custom BRG code written against 2021.3 should be treated as a rewrite on upgrade.
   - **Merged U1-014:** BRG has two buffer modes. On GLES it uses a constant-buffer (UBO) window: `BatchBufferTarget.ConstantBuffer`, with `GetConstantBufferMaxWindowSize` and `GetConstantBufferOffsetAlignment` limits. On Vulkan it uses raw SSBO (`RawBuffer`). These APIs are documented from 2022.3; the 2021.3 page is a 404. [T][C]
-    - Source: https://docs.unity3d.com/2022.3/Documentation/ScriptReference/BatchRendererGroup.BufferTarget.html (accessed 2026-09-24) · Applies to: 2022.3+ · Evidence: [doc]
+    - Source: https://docs.unity3d.com/2022.3/Documentation/ScriptReference/Rendering.BatchRendererGroup.BufferTarget.html (accessed 2026-09-24) · Applies to: 2022.3+ · Evidence: [doc]
     - Notes: Quest GLES builds run BRG through the UBO window path. Instance data per draw is bounded by the window size. No published Quest number exists for the UBO-mode vs SSBO-mode cost. To measure, A/B the same BRG scene with GLES vs Vulkan and read GPU/CPU frame time from OVR Metrics or RenderDoc. [verify on device]
   - **Merged U3-028:** DOTS instancing data comes from a UBO on GLES/GL (`UNITY_DOTS_INSTANCING_UNIFORM_BUFFER`) and from an SSBO elsewhere, including Vulkan. On GL/GLES, `DOTS_INSTANCING_ON` requires `#pragma target 3.5` or higher. [T]
     - Source: https://github.com/Unity-Technologies/Graphics/blob/master/Packages/com.unity.render-pipelines.core/ShaderLibrary/UnityInstancing.hlsl (accessed 2026-09-24) · Applies to: 2022.3, 6.x · Evidence: [doc]
@@ -1423,7 +1423,7 @@ Render Graph merging rules, load/store audit, on-tile post-processing and the pr
     - the window size must be ≤ `GetConstantBufferMaxWindowSize()`
 
     In RawBuffer mode, both offset and window size must be 0. [T]
-    - Source: https://docs.unity3d.com/6000.6/ScriptReference/Rendering.BatchRendererGroup.AddBatch.html (accessed 2026-09-24) · Applies to: 2022.3, 6.x · Evidence: [doc] [verify on device]
+    - Source: https://docs.unity3d.com/6000.6/Documentation/ScriptReference/Rendering.BatchRendererGroup.AddBatch.html (accessed 2026-09-24) · Applies to: 2022.3, 6.x · Evidence: [doc] [verify on device]
     - Notes: No published Adreno GLES window size was found. Log the two getters on Quest 2 and Quest 3 under GLES if you still ship GLES.
   - Merge note: U1-013/U1-014 give the version history and buffer modes; U3-026/028/029 give setup and runtime detection. Same subject, combined here.
 
@@ -1928,7 +1928,7 @@ Quest shader-optimization history also appears in section 1 (U1-038 DistanceAtte
   | 6.5 | Moved to `UnityEngine.Rendering` (non-experimental); cache-miss tracing added; Graphics Settings automation added (6000.5.0a9) |
 
   [C]
-  - Source: release notes https://unity.com/releases/editor/whats-new/6000.0.0 (b15), https://unity.com/releases/editor/whats-new/6000.0.55f1, https://unity.com/releases/editor/whats-new/6000.5.0 (accessed 2026-09-24); https://docs.unity3d.com/6000.6/ScriptReference/Rendering.GraphicsStateCollection.html · Applies to: 6.0+ · Evidence: [doc]
+  - Source: release notes https://unity.com/releases/editor/whats-new/6000.0.0 (b15), https://unity.com/releases/editor/whats-new/6000.0.55f1, https://unity.com/releases/editor/whats-new/6000.5.0 (accessed 2026-09-24); https://docs.unity3d.com/6000.6/Documentation/ScriptReference/Rendering.GraphicsStateCollection.html · Applies to: 6.0+ · Evidence: [doc]
   - Notes: Code shared between 6.0/6.3 and 6.5+ needs a `#if UNITY_6000_5_OR_NEWER` namespace switch. The 6.3/6.4 prewarm pages still call it experimental. See U3-C4 on the fallback version.
   - **Merged U1-045:** GraphicsStateCollection (GSC) was added in 6000.0.0b15 as an experimental API (UnityEngine.Experimental.Rendering). It traces the PSOs a run actually uses so they can be compiled ahead of time. 6.1 What's New presents it as the fix for shader-compilation stutter. [C]
     - Source: https://docs.unity3d.com/6000.6/Documentation/Manual/WhatsNewUnity61.html ; https://unity.com/releases/editor/whats-new/6000.0.0b15 (accessed 2026-09-24) · Applies to: 6.0+ · Evidence: [doc]
@@ -1968,11 +1968,11 @@ Quest shader-optimization history also appears in section 1 (U1-038 DistanceAtte
   - Real parallel PSO warmup needs `SystemInfo.supportsParallelPSOCreation == true` (WebGPU excepted). Otherwise Unity falls back to `ShaderVariantCollection.WarmUp` semantics, and `count` then limits variants, not PSOs.
 
   [C]
-  - Source: https://docs.unity3d.com/6000.6/ScriptReference/Rendering.GraphicsStateCollection.WarmUpProgressively.html; https://docs.unity3d.com/6000.6/Documentation/Manual/shader-prewarm.html (accessed 2026-09-24) · Applies to: 6.0+ · Evidence: [doc] [verify on device]
+  - Source: https://docs.unity3d.com/6000.6/Documentation/ScriptReference/Rendering.GraphicsStateCollection.WarmUpProgressively.html; https://docs.unity3d.com/6000.6/Documentation/Manual/shader-prewarm.html (accessed 2026-09-24) · Applies to: 6.0+ · Evidence: [doc] [verify on device]
   - Notes: No published value of `supportsParallelPSOCreation` on Quest Vulkan was found. Log it at startup on Quest 2 and Quest 3; if it is false, you get the variant-only fallback of U3-082. Useful state: `completedWarmupCount`, `isWarmedUp`, `totalGraphicsStateCount`.
 
 - **U3-087** Cache-miss loop (6.5+): warm with `traceCacheMisses = true`, and PSOs requested after warmup that weren't in the collection accumulate in `cacheMissCollection`. Merge them back with `Append` or `AddGraphicsStates`, and check coverage with `ContainsVariant`. Cache-miss tracing requires `isTracingCacheMisses` to be false before the warmup call. [C]
-  - Source: https://docs.unity3d.com/6000.6/ScriptReference/Rendering.GraphicsStateCollection.html; https://docs.unity3d.com/6000.6/Documentation/Manual/shader-pso-trace.html (accessed 2026-09-24) · Applies to: 6.5+ · Evidence: [doc]
+  - Source: https://docs.unity3d.com/6000.6/Documentation/ScriptReference/Rendering.GraphicsStateCollection.html; https://docs.unity3d.com/6000.6/Documentation/Manual/shader-pso-trace.html (accessed 2026-09-24) · Applies to: 6.5+ · Evidence: [doc]
   - Notes: Run QA playthroughs on dev builds with this on and ship the merged collection. It is the closest thing to a p99-hitch regression test.
 
 - **U3-088** Graphics Settings > Shader Settings, 6.5+ (absent in 6.3/6.4):
@@ -3492,7 +3492,7 @@ Every conflict recorded in the topic notes is kept under its original ID. Confli
 ### U3-C4: GSC automatic fallback version
 
 - **The 6.x "other prewarm methods" page says the GLES/DX11 fallback is available in 6.1 and later.** U3-082 [doc]: https://docs.unity3d.com/6000.6/Documentation/Manual/shader-prewarm-other.html ; https://docs.unity3d.com/6000.6/Documentation/Manual/shader-pso-introduction.html
-- **6000.0.55f1 release notes add a GSC fallback to legacy SVC warmup on platforms without parallel PSO compilation.** U3-083 [doc]: https://unity.com/releases/editor/whats-new/6000.0.0 ; https://unity.com/releases/editor/whats-new/6000.0.55f1 ; https://unity.com/releases/editor/whats-new/6000.5.0 ; https://docs.unity3d.com/6000.6/ScriptReference/Rendering.GraphicsStateCollection.html | U1-048 [doc]: https://unity.com/releases/editor/whats-new/6000.0.55f1 ; https://unity.com/releases/editor/whats-new/6000.0.74f1
+- **6000.0.55f1 release notes add a GSC fallback to legacy SVC warmup on platforms without parallel PSO compilation.** U3-083 [doc]: https://unity.com/releases/editor/whats-new/6000.0.0 ; https://unity.com/releases/editor/whats-new/6000.0.55f1 ; https://unity.com/releases/editor/whats-new/6000.5.0 ; https://docs.unity3d.com/6000.6/Documentation/ScriptReference/Rendering.GraphicsStateCollection.html | U1-048 [doc]: https://unity.com/releases/editor/whats-new/6000.0.55f1 ; https://unity.com/releases/editor/whats-new/6000.0.74f1
 - **Assessment:** Likely a 6.1 feature later backported to 6.0.55+.
 - **Status:** Partly resolved; verify on 6.0 LTS with GLES before relying on it.
 
@@ -3964,7 +3964,7 @@ Deduplicated from every URL in the five topic notes (407 URLs). All were accesse
 | Unity Manual 2022.3: class TextureImporter | https://docs.unity3d.com/2022.3/Documentation/Manual/class-TextureImporter.html | accessed 2026-09-24 |
 | Unity Manual 2022.3: shader keywords | https://docs.unity3d.com/2022.3/Documentation/Manual/shader-keywords.html | accessed 2026-09-24 |
 | Unity Manual 2022.3: static batching | https://docs.unity3d.com/2022.3/Documentation/Manual/static-batching.html | accessed 2026-09-24 |
-| Unity Scripting API 2022.3: BatchRendererGroup.BufferTarget | https://docs.unity3d.com/2022.3/Documentation/ScriptReference/BatchRendererGroup.BufferTarget.html | accessed 2026-09-24 |
+| Unity Scripting API 2022.3: BatchRendererGroup.BufferTarget | https://docs.unity3d.com/2022.3/Documentation/ScriptReference/Rendering.BatchRendererGroup.BufferTarget.html | accessed 2026-09-24 |
 | Unity Manual 2023.2: class PlayerSettingsAndroid | https://docs.unity3d.com/2023.2/Documentation/Manual/class-PlayerSettingsAndroid.html | accessed 2026-09-24 |
 | Unity Manual 6000.0: ProfilerHighlights | https://docs.unity3d.com/6000.0/Documentation/Manual/ProfilerHighlights.html | accessed 2026-09-24 |
 | Unity Manual 6000.0: embedded linux optional features | https://docs.unity3d.com/6000.0/Documentation/Manual/embedded-linux-optional-features.html | accessed 2026-09-24 |
@@ -4145,11 +4145,11 @@ Deduplicated from every URL in the five topic notes (407 URLs). All were accesse
 | STP | https://docs.unity3d.com/6000.6/Documentation/Manual/urp/stp/stp-upscaler.html | accessed 2026-09-24 |
 | URP asset reference | https://docs.unity3d.com/6000.6/Documentation/Manual/urp/universalrp-asset.html | accessed 2026-09-24 |
 | Universal Renderer reference | https://docs.unity3d.com/6000.6/Documentation/Manual/urp/urp-universal-renderer.html | accessed 2026-09-24 |
-| Unity Manual 6000.6: gpu culling | https://docs.unity3d.com/6000.6/Documentation/Manual/urp/urp/gpu-culling.html | accessed 2026-09-24 |
-| Unity Manual 6000.6: gpu resident drawer performance | https://docs.unity3d.com/6000.6/Documentation/Manual/urp/urp/gpu-resident-drawer-performance.html | accessed 2026-09-24 |
-| Unity Manual 6000.6: make object compatible gpu rendering | https://docs.unity3d.com/6000.6/Documentation/Manual/urp/urp/make-object-compatible-gpu-rendering.html | accessed 2026-09-24 |
-| Unity Manual 6000.6: shader stripping check | https://docs.unity3d.com/6000.6/Documentation/Manual/urp/urp/shader-stripping-check.html | accessed 2026-09-24 |
-| Unity Manual 6000.6: shader stripping fog | https://docs.unity3d.com/6000.6/Documentation/Manual/urp/urp/shader-stripping-fog.html | accessed 2026-09-24 |
+| Unity Manual 6000.6: gpu culling | https://docs.unity3d.com/6000.6/Documentation/Manual/urp/gpu-culling.html | accessed 2026-09-24 |
+| Unity Manual 6000.6: gpu resident drawer performance | https://docs.unity3d.com/6000.6/Documentation/Manual/urp/gpu-resident-drawer-performance.html | accessed 2026-09-24 |
+| Unity Manual 6000.6: make object compatible gpu rendering | https://docs.unity3d.com/6000.6/Documentation/Manual/urp/make-object-compatible-gpu-rendering.html | accessed 2026-09-24 |
+| Unity Manual 6000.6: shader stripping check | https://docs.unity3d.com/6000.6/Documentation/Manual/urp/shader-stripping-check.html | accessed 2026-09-24 |
+| Unity Manual 6000.6: shader stripping fog | https://docs.unity3d.com/6000.6/Documentation/Manual/urp/shader-stripping-fog.html | accessed 2026-09-24 |
 | VRS | https://docs.unity3d.com/6000.6/Documentation/Manual/urp/variable-rate-shading-introduction.html | accessed 2026-09-24 |
 | Tile-based rendering in XR | https://docs.unity3d.com/6000.6/Documentation/Manual/xr-graphics-on-tile-rendering.html | accessed 2026-09-24 |
 | XR resolution control | https://docs.unity3d.com/6000.6/Documentation/Manual/xr-graphics-resolution-scaling.html | accessed 2026-09-24 |
@@ -4159,9 +4159,9 @@ Deduplicated from every URL in the five topic notes (407 URLs). All were accesse
 | XR render pipeline compatibility | https://docs.unity3d.com/6000.6/Documentation/Manual/xr-render-pipeline-compatibility.html | accessed 2026-09-24 |
 | Untethered XR optimization | https://docs.unity3d.com/6000.6/Documentation/Manual/xr-untethered-device-optimization.html | accessed 2026-09-24 |
 | Unity Scripting API 6000.6: QualitySettings vSyncCount | https://docs.unity3d.com/6000.6/Documentation/ScriptReference/QualitySettings-vSyncCount.html | accessed 2026-09-24 |
-| Unity Scripting API 6000.6: Rendering.BatchRendererGroup.AddBatch | https://docs.unity3d.com/6000.6/ScriptReference/Rendering.BatchRendererGroup.AddBatch.html | accessed 2026-09-24 |
-| Unity Scripting API 6000.6: Rendering.GraphicsStateCollection.WarmUpProgressively | https://docs.unity3d.com/6000.6/ScriptReference/Rendering.GraphicsStateCollection.WarmUpProgressively.html | accessed 2026-09-24 |
-| Unity Scripting API 6000.6: Rendering.GraphicsStateCollection | https://docs.unity3d.com/6000.6/ScriptReference/Rendering.GraphicsStateCollection.html | accessed 2026-09-24 |
+| Unity Scripting API 6000.6: Rendering.BatchRendererGroup.AddBatch | https://docs.unity3d.com/6000.6/Documentation/ScriptReference/Rendering.BatchRendererGroup.AddBatch.html | accessed 2026-09-24 |
+| Unity Scripting API 6000.6: Rendering.GraphicsStateCollection.WarmUpProgressively | https://docs.unity3d.com/6000.6/Documentation/ScriptReference/Rendering.GraphicsStateCollection.WarmUpProgressively.html | accessed 2026-09-24 |
+| Unity Scripting API 6000.6: Rendering.GraphicsStateCollection | https://docs.unity3d.com/6000.6/Documentation/ScriptReference/Rendering.GraphicsStateCollection.html | accessed 2026-09-24 |
 | Unity Manual 6000.7: scripting backends coreclr | https://docs.unity3d.com/6000.7/Documentation/Manual/scripting-backends-coreclr.html | accessed 2026-09-24 |
 | com.unity.addressables@1.21: MemoryManagement | https://docs.unity3d.com/Packages/com.unity.addressables@1.21/manual/MemoryManagement.html | accessed 2026-09-24 |
 | com.unity.addressables@2.3: MemoryManagement | https://docs.unity3d.com/Packages/com.unity.addressables@2.3/manual/MemoryManagement.html | accessed 2026-09-24 |
@@ -4399,7 +4399,7 @@ Deduplicated from every URL in the five topic notes (407 URLs). All were accesse
 | Lit | https://github.com/Unity-Technologies/Graphics/blob/master/Packages/com.unity.render-pipelines.universal/Shaders/Lit.shader | accessed 2026-09-24 |
 | package | https://raw.githubusercontent.com/Unity-Technologies/Graphics/2022.3/staging/Packages/com.unity.render-pipelines.universal/package.json | accessed 2026-09-24 |
 | package | https://raw.githubusercontent.com/Unity-Technologies/Graphics/6000.5/staging/Packages/com.unity.render-pipelines.universal/package.json | accessed 2026-09-24 |
-| URP package.json per branch | https://raw.githubusercontent.com/Unity-Technologies/Graphics/<branch | accessed 2026-09-24 |
+| URP package.json per branch | `raw.githubusercontent.com/Unity-Technologies/Graphics/<branch>/Packages/com.unity.render-pipelines.universal/package.json` | accessed 2026-09-24 |
 | ShaderGraphProjectSettings.cs, 6000.0/staging (gap-fill round 1) | https://raw.githubusercontent.com/Unity-Technologies/Graphics/6000.0/staging/Packages/com.unity.shadergraph/Editor/ShaderGraphProjectSettings.cs | accessed 2026-09-24 |
 | ShaderGraphProjectSettings.cs, 2022.3 / 6000.3 / 6000.5 / master (gap-fill round 2) | https://github.com/Unity-Technologies/Graphics/blob/2022.3/staging/Packages/com.unity.shadergraph/Editor/ShaderGraphProjectSettings.cs (same path on 6000.3/staging, 6000.5/staging, master) | accessed 2026-09-24 |
 | ShaderGraphPreferences.cs, 2021.3 / 2022.3 (gap-fill round 2) | https://github.com/Unity-Technologies/Graphics/blob/2021.3/staging/Packages/com.unity.shadergraph/Editor/ShaderGraphPreferences.cs (same path on 2022.3/staging) | accessed 2026-09-24 |

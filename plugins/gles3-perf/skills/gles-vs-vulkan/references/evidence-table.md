@@ -127,7 +127,7 @@ All accessed 2026-09-24.
 - https://docs.unity3d.com/6000.6/Documentation/Manual/xr-foveated-rendering-support.html [doc]
 - https://docs.unity3d.com/6000.1/Documentation/Manual/xr-multiview-render-regions.html [doc]
 - https://docs.unity3d.com/6000.3/Documentation/Manual/vulkanapi-graphics-jobs-configuration.html [doc]
-- https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/oculus-plugin.html [doc]
+- https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/index.html [doc]
 - https://unity.com/releases/editor/whats-new/6000.3.12f1 [doc]
 - https://docs.unity3d.com/6000.6/Documentation/Manual/UpgradeGuideUnity66.html [doc]
 - https://opengles.gpuinfo.org/displayreport.php?id=7475 [measured]

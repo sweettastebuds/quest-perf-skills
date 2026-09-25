@@ -379,7 +379,7 @@ All accessed 2026-09-24. Pages under one prefix are grouped; each URL is prefix 
   os-compatibility-mode/, unity-openxr-settings-quest/, unity-quest-runtime-optimizer/,
   unity-mobile-performance-intro/ (stale), po-draw-call-analysis/ (stale),
   po-perf-opt-mobile/ (stale 72 fps)
-- Meta native docs [doc], prefix https://developers.meta.com/horizon/documentation/native/android/ : ts-ovrstats/, os-render-scale/,
+- Meta native docs [doc], prefix `developers.meta.com/horizon/documentation/native/android/` + ts-ovrstats/, os-render-scale/,
   os-cpu-gpu-levels/
 - Meta store and resources pages [doc], prefix https://developers.meta.com/horizon/resources/ : vrc-quest-performance-1/,
   vrc-quest-performance-2/, vrc-quest-performance-3/, vrc-quest-performance-4/,

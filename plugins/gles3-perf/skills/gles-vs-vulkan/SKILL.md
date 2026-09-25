@@ -235,7 +235,7 @@ Unity:
 - https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.16/manual/features/metaquest.html [doc]
 - https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.16/manual/index.html [doc]
 - https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/index.html [doc]
-- https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/oculus-plugin.html [doc]
+- https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/index.html [doc]
 - https://docs.unity3d.com/6000.3/Documentation/Manual/class-PlayerSettingsAndroid.html [doc]
 - https://docs.unity3d.com/6000.3/Documentation/Manual/vulkanapi-graphics-jobs-configuration.html [doc]
 - https://docs.unity3d.com/6000.3/Documentation/ScriptReference/RenderTexture-memorylessMode.html [doc]
