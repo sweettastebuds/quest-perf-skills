@@ -56,7 +56,7 @@ Do not use for:
 | Clock loss from caps | GPU −16.3%, CPU −14.1% (arithmetic on the clock table, not measured frame time) | Q2-006 notes, derived | `Quest 3/3S` |
 | Launch-era passthrough cost | 17% less GPU, 14% less CPU than VR-only; Depth API adds more GPU, no number | Q2-006 / Q4-002 / A1-019 [doc], blog Oct 2023 | `Quest 3` (3S same SoC); launch-era OS, [verify on device] |
 | MR main-thread budget | about 22.9 M cycles/frame at 72 Hz (1.65 GHz × 13.9 ms) vs 26.7 M in VR at L4 | A1-018 / A1-026, derived | `Quest 3/3S` |
-| Sustained MR planning level | budget against GPU L2 (456 MHz) and CPU L3 (1.65 GHz) | Q4-003, Q4-006 [doc] | `Quest 3/3S` |
+| Sustained MR planning level | budget against GPU L2 (456 MHz) and CPU L3 (1.65 GHz) | GPU L2: Q4-006 [doc]; CPU L3: follows from the availability table, A3-072 [doc] | `Quest 3/3S` |
 | Quest 2 passthrough level cap | none listed in the current table | Q2-048 / Q4-009 [doc] | `Quest 2`, [verify on device] |
 | Passthrough layers | max 3 per app; each adds "non-trivial" overhead, no per-layer number | Q4-011 [doc] | all Quest |
 | Passthrough color LUT | max resolution 64; start at 16, stay ≤ 32; creating a 64 LUT takes "a few ms" | Q4-017 [doc] | all Quest |
@@ -76,7 +76,7 @@ budgeting a specific MR feature or planning an A/B.
 
 ### 1. Budget MR as a separate tier at CPU L3 / GPU L2
 - **Change:** size the MR mode of each scene so it holds frame rate at GPU L2 (456 MHz) and CPU L3 (1.65 GHz) on Quest 3/3S. Use `SystemHeadset` tiering from `quest-perf:quest-budgets-tiers`; add an "MR" axis to the quality ladder (render scale, FFR, effect count). Do not size MR content from VR profiles taken at L4.
-- **Effect:** removes the average-frame-time overrun that appears only in MR; also removes level oscillation when the governor has nowhere to go.
+- **Effect:** removes the average-frame-time overrun that appears only in MR; keeps GPU utilisation below the 87% level-raise threshold at the cap, avoiding level oscillation and the frame-time variance it causes (Q2-046/Q2-047 notes).
 - **Cost:** lower MR content density than VR.
 - **Tags:** `Quest 3/3S` `all Unity` `Vulkan` `GLES`. **Goal:** Throughput, Consistency.
 - **Conflicts:** GPU L5 with passthrough is ambiguous. The table says L5 needs GPU L4 available and trading +1 "or dynamic resolution is enabled"; one reading lets dynamic resolution alone unlock L5 in MR (Q4-C1). A third-party CSV shows 34 of 565 samples at GPU L3 with passthrough, against the documented cap (QUEST-GF2-C4). Keep the documented cap as the planning rule [verify on device]. Enabling dynamic resolution costs little and is the only candidate path to L5 (`quest-perf:quest-resolution-foveation`).
@@ -273,8 +273,8 @@ Shader "MR/DepthOnlyOccluder"
 
 ### 7. Run MR at 72 Hz unless you have measured headroom
 - **Change:** in flicker-free lighting, 72 Hz lets passthrough cameras sync to the display: stable latency, no judder (Q4-016). On OpenXR: Meta, `TryRequestDisplayRefreshRate(72f)`. Refresh-rate policy lives in `quest-perf:quest-frame-pacing`.
-- **Effect:** 13.9 ms instead of 11.1 ms budget, at already-capped clocks; fewer stale frames.
-- **Cost:** higher persistence than 90 Hz.
+- **Effect:** stable passthrough latency and no judder (Q4-016); the 13.9 ms budget instead of 11.1 ms at the capped clocks should lower stale-frame risk, no published number [verify on device].
+- **Cost:** lower display refresh than 90 Hz; Q4-016 names only the 13.9 ms vs 11.1 ms trade-off, no published quality cost.
 - **Tags:** `Quest 3/3S`. **Goal:** Consistency, Throughput.
 
 ### 8. MRUK and scene geometry
@@ -292,7 +292,7 @@ Shader "MR/DepthOnlyOccluder"
 - **Change:** request a concrete resolution (`PassthroughCameraAccess.RequestedResolution`, list 320x240 to 1280x1280) and a `MaxFramerate`, never "largest" (Q4-023). Stream one camera unless you need stereo: cost is per camera (Q4-022; stereo about 2-4% GPU, derived, [verify on device]). Use `PassthroughCameraAccess` (MRUK v81+) instead of `WebCamTexture` (Q4-024). On OpenXR: Meta 2.6 use the GPU image path (zero-copy, Vulkan only; acquire/release inside `beginCameraRendering`/`endCameraRendering`); use the CPU path only for CV, off the main thread (Q4-025).
 - **Effect:** lower GPU% and memory. Whether lower resolution reduces the 1-2% / 45 MB is unpublished; measure GPU% at fixed GPU L.
 - **Cost:** lower camera resolution or frame rate lowers CV accuracy and update rate. Mono loses stereo depth cues.
-- **Tags:** `Quest 3/3S` HzOS v74+ `Vulkan` (GPU path) `Unity ≥ 6000.0` (OpenXR: Meta). **Goal:** Throughput.
+- **Tags:** `Quest 3/3S` HzOS v74+; Core SDK/MRUK path: MRUK v81+ `Unity ≥ 2022.3.15f1` (MRUK 207.0.0: `Unity ≥ 6000.0.66f2`); OpenXR: Meta 2.6 image capture: `Unity ≥ 6000.0`, GPU path `Vulkan` only. **Goal:** Throughput.
 
 ### 10. Hand and body tracking
 - **Change:** ship without Fast Motion Mode first; enable only when fast motion loses tracking (Q4-040). Toggle at runtime with `OVRPlugin.RequestFastMotionMode(bool)` or `OVRManager.instance.fastMotionModeHandPosesEnabled` only for fast-motion segments. Wide Motion Mode runs body tracking under the hood (Q4-045). Request IOBT before enabling other heavy services, or it starts in low fidelity with no error (Q4-046). Leave "Update When Offscreen" off on body-tracked skinned meshes; enlarge SkinnedMeshRenderer bounds instead (Q4-047).
@@ -301,8 +301,8 @@ Shader "MR/DepthOnlyOccluder"
 - **Tags:** `Quest 2` `Quest 3/3S` (IOBT/WMM: `Quest 3/3S`) Core SDK / Movement SDK. FMM: Core SDK v59+, and `Unity ≥ 6000.0.66f2` per the current page (Q4-040). Multimodal: `Unity ≥ 6000.0.66f2`, SDK v62+ (Q4-044). **Goal:** Throughput.
 
 ### 11. CPU-bound MR: do not reach for favour-CPU trading
-- **Change:** `com.oculus.trade_cpu_for_gpu_amount = -1` ("Processor Favor") cannot help: CPU L5 needs CPU L4 available, and passthrough removes L4 (A1-033, Q4-004). Move work into jobs, use Boost for bursts, or cut main-thread work (`unity-perf:unity-cpu-scripting`, `quest-perf:quest-levels-thermal`).
-- **Effect:** none on frame time. The setting is a no-op in MR; a CPU-bound MR app gains only from real work cuts or Boost bursts (variance).
+- **Change:** `com.oculus.trade_cpu_for_gpu_amount = -1` ("Processor Favor") cannot help: CPU L5 needs CPU L4 available, and passthrough removes L4 (A1-033, Q4-004). Move work into jobs or cut main-thread work (`unity-perf:unity-cpu-scripting`). Boost is documented as L4 to L8 and its behaviour under passthrough is undocumented (Q4-007) [verify on device]: log the granted `cpu_level` and `cpu_frequency_MHz` during a Boost request in MR before relying on it (`quest-perf:quest-levels-thermal`).
+- **Effect:** none on frame time. The setting is a no-op in MR; a CPU-bound MR app gains only from real main-thread work cuts; Boost in MR is unconfirmed.
 - **Cost:** none; it removes a wasted build-time decision.
 - **Tags:** `Quest 3/3S` OpenXR backend. **Goal:** Throughput.
 
@@ -328,7 +328,7 @@ Shader "MR/DepthOnlyOccluder"
 - **Quest 3S has no depth sensor** (Q2-002, Q2-092), but the passthrough CPU/GPU restrictions are the same as Quest 3. The Depth API support list names Quest 3 and 3S (Q4-026) [verify on device] on 3S.
 - **Symmetric Projection / MVRR in MR:** only the generic 5-15% and 3-8% GPU-bound figures exist; no MR measurement, and check edge alpha for passthrough artifacts [verify on device] (Q4-078).
 - **FMM side effects:** it disables the Dynamic Object Tracker (MRUK keyboard calls return no anchors); IOBT/WMM will not run with passthrough + FBS + FMM together; multimodal wins over FMM (Q4-041, Q4-044).
-- **`passthroughLayerResumed` over Link** does not fire on SDK v203 (Q4-012 notes). Test MR reveal on device.
+- **`passthroughLayerResumed` over Link** does not fire on SDK v203 (Q4-012 notes) (fix scheduled for v204 per the v203 release notes). Test MR reveal on device.
 
 ## Sources
 
