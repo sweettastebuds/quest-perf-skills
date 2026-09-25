@@ -87,7 +87,7 @@ Do not use; go to the sibling instead:
 | Disabling incremental GC saves "as much as 1 ms per frame" (write barriers) in CPU-bound projects | all versions, not Quest-measured | U5-006 [doc] [verify on device] |
 | `incrementalTimeSliceNanoseconds` default 3 ms (22% of 72 Hz, 27% of 90 Hz, 36% of 120 Hz); GC timer resolution can be a whole ms | all versions | U5-007 [doc] |
 | Unity's manual-GC example: incremental collect at 8 MB allocated, full above 128 MB | all versions | U5-009 [doc]; no Quest heap ceiling published |
-| Legacy Graphics Jobs + MT rendering: "up to 2 FPS" in major projects (no baseline fps given) | Unity ≥ 2022.3.35f1 and 6.x, Vulkan only | A1-058, G1-026 [doc] |
+| Legacy Graphics Jobs + MT rendering: "up to 2 FPS" in major projects (no baseline fps given) | Unity ≥ 2022.3.35f1 and 6.x, Vulkan only (Graphics Jobs Mode requires Vulkan, G1-025) | A1-058, G1-025, G1-026 [doc] |
 | 3 app cores at CPU L4 outperform dual-core mode at L6 | Quest 2/Pro (dual-core); principle all Quest | ARM-GF1-001 [doc] |
 | App logic over ~2 ms "probably has room to optimize" (heuristic) | all Quest | U5-045 [doc] |
 | Fixed Timestep default 0.02 s: 0.69 / 0.56 / 0.42 physics steps per frame at 72 / 90 / 120 Hz; 1/refresh raises physics cost 1.44x / 1.8x / 2.4x | all versions | U5-050 [doc] + arithmetic |
