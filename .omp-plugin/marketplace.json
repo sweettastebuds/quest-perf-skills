@@ -1,0 +1,37 @@
+{
+  "name": "quest-perf-skills",
+  "description": "Performance skill bundles for Unity URP apps on Meta Quest 2 and Quest 3/3S: platform and Meta SDK, Unity 2021.3 through Unity 6.x, OpenGL ES 3.x, and Snapdragon XR2 (ARM CPU + Adreno GPU) hardware. Every skill targets throughput (lower average frame time) or consistency (stable frame delivery).",
+  "owner": {
+    "name": "Michael Fernandez"
+  },
+  "plugins": [
+    {
+      "name": "quest-perf",
+      "source": "./plugins/quest-perf",
+      "description": "Meta Quest 2 and Quest 3/3S platform performance for Unity: triage, budgets and tiers, frame pacing and thermals, resolution and foveation, Application SpaceWarp, compositor layers, mixed-reality costs, SDK choices, and profiling tools.",
+      "category": "performance",
+      "tags": ["meta-quest", "vr", "unity", "performance", "profiling"]
+    },
+    {
+      "name": "unity-perf",
+      "source": "./plugins/unity-perf",
+      "description": "Unity 2021.3 LTS through Unity 6.x URP performance on Quest: version matrix and upgrade risks, URP settings, Render Graph on tile GPUs, batching, shaders and PSO hitches, lighting, CPU and GC, memory and assets, profiling workflow.",
+      "category": "performance",
+      "tags": ["unity", "urp", "render-graph", "shaders", "performance"]
+    },
+    {
+      "name": "gles3-perf",
+      "source": "./plugins/gles3-perf",
+      "description": "OpenGL ES 3.0/3.1/3.2 on Meta Quest: an honest GLES-vs-Vulkan decision, tile-friendly rendering, multiview, driver and state overhead, shader compilation, Adreno extensions, and GLES capture.",
+      "category": "performance",
+      "tags": ["opengl-es", "gles", "vulkan", "adreno", "performance"]
+    },
+    {
+      "name": "arm-mobile-hw-perf",
+      "source": "./plugins/arm-mobile-hw-perf",
+      "description": "Snapdragon XR2 Gen 1 and Gen 2 hardware in Quest 2 and Quest 3/3S: ARM CPU cores and thread placement, Adreno 650/740 architecture, shader cost model, memory bandwidth, thermals, and Snapdragon Profiler.",
+      "category": "performance",
+      "tags": ["arm", "adreno", "snapdragon", "xr2", "performance"]
+    }
+  ]
+}

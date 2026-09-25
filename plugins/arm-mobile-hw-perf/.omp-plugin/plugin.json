@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "arm-mobile-hw-perf",
+  "displayName": "Snapdragon XR2 Hardware Performance",
+  "version": "0.1.0",
+  "description": "Snapdragon XR2 Gen 1 (Quest 2) and XR2 Gen 2 (Quest 3/3S) hardware performance: ARM CPU cores and Unity thread placement, Adreno 650/740 architecture (binning, GMEM, LRZ, UBWC), Adreno shader cost model, memory bandwidth, thermals and clock levels, and Snapdragon Profiler on Quest.",
+  "author": {
+    "name": "Michael Fernandez"
+  },
+  "keywords": ["arm", "cortex", "adreno", "snapdragon", "xr2", "gmem", "bandwidth", "thermals", "quest", "performance"]
+}
