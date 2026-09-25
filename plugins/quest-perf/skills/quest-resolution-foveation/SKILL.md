@@ -134,7 +134,7 @@ FFR is a per-bin property of the swapchain surface. A main pass into a non-swapc
 ### 3. Symmetric Projection, then Multiview Render Regions
 
 - **Symmetric Projection:** OpenXR > Meta Quest Support > *Symmetric Projection (Vulkan)* (Oculus XR: Symmetric Projection). Needs Vulkan + Multiview; Oculus XR 3.0.0+ or OpenXR 1.9.1+ (Q2-027 / Q3-087, Q4-058). Typical 5-15% GPU when GPU-bound.
-- **MVRR:** OpenXR > Meta Quest Support > *Multiview Render Regions Optimizations* = All Passes (Unity 6.2+, OpenXR 1.15+) or Final Pass; Oculus: *Optimize Multiview Render Regions* (final pass only). Unity ≥ 6000.1; 6.3+ requires Render Graph (Q3-088, Q4-075). Typical 3-8%.
+- **MVRR:** OpenXR > Meta Quest Support > *Multiview Render Regions Optimizations* = All Passes (Unity 6.2+, OpenXR 1.15+) or Final Pass; Oculus: *Optimize Multiview Render Regions* (final pass only). Unity ≥ 6000.1; 6.3+ requires Render Graph (Q3-088, Q4-075). Plugins: OpenXR 1.14+ (All Passes 1.15+); Oculus XR 4.5.0 per changelog vs 4.6+ per Unity 6.6 manual (conflict Q4-C2; Q3-088, Q4-058). Typical 3-8%.
 - Final Pass mode gives nothing when the frame goes through intermediates/post; switch All Passes to Final Pass only if bloom/DoF/blur edges clip (Q4-075). Custom Render Graph raster passes opt in with `SetExtendedFeatureFlags(ExtendedFeatureFlags.MultiviewRenderRegionsCompatible)` or drop out of All Passes (Q4-077).
 - Conflict (Q4-C6): Meta's Unity page recommends Symmetric Projection for most apps; the native page warns it can hurt with heavy post-processing because intermediate passes are not foveated and shade the extra nasal pixels. A/B it on your pipeline. MVRR can regress with very simple shaders or minimal overdraw (Q4-074).
 - Effect: average GPU time down; no variance effect. Cost: imperceptible per Meta; profile custom shaders that assume per-eye asymmetry.
@@ -143,12 +143,12 @@ FFR is a per-bin property of the swapchain surface. A main pass into a non-swapc
 ### 4. Dynamic resolution (with GPU level 5 as the bonus)
 
 - **Meta XR SDK:** OVRCameraRig > OVR Manager > *Enable Dynamic Resolution*; set `quest2Min/MaxDynamicResolutionScale` and `quest3Min/MaxDynamicResolutionScale` in the Inspector (the max sets the startup allocation; the quest3 fields also govern 3S). Toggle at runtime with `OVRManager.instance.enableDynamicResolution` (Q3-050, Q2-024). Minimum versions: 2021.3.45f1 / 2022.3.49f1 / 6000.0.25f1 with Oculus XR 3.3.0+ or OpenXR 1.12.1+ (Q2-025).
-- **Unity OpenXR (Unity ≥ 6000.3):** Automatic Viewport Dynamic Resolution, Vulkan, URP 17.0.3+, camera *URP Dynamic Resolution* on; not in Compatibility Mode; use Final Pass MVRR with it (Q3-059).
+- **Unity OpenXR (Unity ≥ 6000.3, OpenXR 1.16.0+):** Automatic Viewport Dynamic Resolution, Vulkan, URP 17.0.3+, camera *URP Dynamic Resolution* on; not in Compatibility Mode; use Final Pass MVRR with it (Q3-059).
 - Always tick *Dynamic Resolution* on the CenterEyeAnchor camera (or set `camera.allowDynamicResolution = true` before rendering), or URP additional lights misalign (Q3-053).
 - Range: keep the minimum at 0.85 for Store apps (VRC Perf.4, Q3-003). Lower the maximum from the 1.6 default if memory is tight: allocation happens at the max (Q2-024).
 - Effect: **Consistency** first: during thermal events the OS lowers render scale instead of dropping frames (Q3-049, A3-086). **Throughput**: required for GPU L5 (Q2-029). Average GPU time follows the viewport; memory follows the max.
 - Cost: variable sharpness; with both dynamic foveation and dynamic resolution on, foveation rises first and resolution drops after (Q3-031).
-- Tags: `Quest 2` `Quest 3/3S` `URP 14.0.9+` `Vulkan` (GLES unconfirmed, KU-09) · **Consistency + Throughput**. Known issues and fix versions: [references/dynamic-resolution.md](references/dynamic-resolution.md).
+- Tags: `Quest 2` `Quest 3/3S` `URP 14.0.9+` `Vulkan` (GLES unconfirmed, KU-09); OpenXR path: `Unity ≥ 6000.3` `OpenXR 1.16+` `URP 17.0.3+` · **Consistency + Throughput**. Known issues and fix versions: [references/dynamic-resolution.md](references/dynamic-resolution.md).
 
 ### 5. Set render scale once, move only the viewport per frame
 
@@ -194,12 +194,9 @@ var resourceData = frameData.Get<UniversalResourceData>();
 using (var builder = renderGraph.AddRasterRenderPass<PassData>("MyColorPass", out var passData))
 {
     builder.SetRenderAttachment(resourceData.activeColorTexture, 0);
-    // URP's own passes use: supportsFoveatedRendering && (xrUniversal.canFoveateIntermediatePasses || isActiveTargetBackBuffer).
-    // This form only matches URP when the active target is the back buffer. When rendering to an intermediate with SRP foveation,
-    // URP's DrawObjects is foveated and this pass is not, so FRStateMismatch remains. xrUniversal is internal in URP 17.
-    // Check the Render Graph Viewer for a merged native pass and, if split, pass cameraData.xr.supportsFoveatedRendering alone
-    // when the SRP Foveation API is active [verify on device].
-    builder.EnableFoveatedRasterization(cameraData.xr.supportsFoveatedRendering && resourceData.isActiveTargetBackBuffer);
+    // Approximates URP's internal canFoveateIntermediatePasses (off only when renderViewportScale is active, Q3-035) [verify on device: Render Graph Viewer shows one merged native pass].
+    bool fovIntermediates = UnityEngine.Mathf.Approximately(UnityEngine.XR.XRSettings.renderViewportScale, 1f);
+    builder.EnableFoveatedRasterization(cameraData.xr.supportsFoveatedRendering && (fovIntermediates || resourceData.isActiveTargetBackBuffer));
     builder.SetRenderFunc((PassData d, RasterGraphContext ctx) => { /* draw */ });
 }
 #endif
@@ -235,12 +232,12 @@ half3 c = SampleSceneColor(uv);
 
 ### 9. Higher-effort or niche options
 
-- **Quad Views:** manifest `com.oculus.feature.QUAD_VIEWS` (required=true restricts to Horizon OS v85+), OpenXR 1.18.0+; must not be combined with FFR or dynamic foveation; inset fixed at centre without eye tracking; extra geometry pass, so measure in vertex-heavy scenes (Q3-090). Effect: average GPU time down only when fill-bound (about 50% fewer pixels, Q3-090); an extra geometry pass can cancel it. Cost: lower periphery resolution, inset fixed at centre. Tags: `Quest 2` `Quest 3/3S` `Vulkan` `OpenXR 1.18.0+` `Horizon OS v85+` · **Throughput**.
-- **MQSR / sharpening:** `OVRManager.sharpenType` for the eye buffer; OVROverlay Super Sample / Sharpen / Auto Filtering per layer (Q3-019). Cost is in compositor GPU time and unpublished; Meta says weigh it against simply raising eye-buffer resolution; Auto filtering is a no-op when unneeded (Q3-016, Q3-017, Q3-020). Measure `TW=` A/B with levels fixed. Effect: adds compositor GPU time (unpublished, Q3-020). It pays off only if it lets you lower eye-buffer scale for the same clarity, so average app GPU time falls only with a matching render-scale cut; no variance effect. Tags: `Quest 2` `Quest 3/3S` `Meta XR Core SDK` `Vulkan` `GLES` · **Throughput** (indirect).
+- **Quad Views:** manifest `com.oculus.feature.QUAD_VIEWS` (required=true restricts to Horizon OS v85+), OpenXR 1.18.0+; must not be combined with FFR or dynamic foveation; inset fixed at centre without eye tracking; extra geometry pass, so measure in vertex-heavy scenes (Q3-090). Effect: average GPU time down only when fill-bound (about 50% fewer pixels, Q3-090); an extra geometry pass can cancel it. Cost: lower periphery resolution, inset fixed at centre. Tags: `Quest 2` `Quest 3/3S` API not stated (Q3-090) [verify on device] `OpenXR 1.18.0+` `Horizon OS v85+` · **Throughput**.
+- **MQSR / sharpening:** `OVRManager.sharpenType` for the eye buffer; OVROverlay Super Sample / Sharpen / Auto Filtering per layer (Q3-019). Cost is in compositor GPU time and unpublished; Meta says weigh it against simply raising eye-buffer resolution; Auto filtering is a no-op when unneeded (Q3-016, Q3-017, Q3-020). Measure `TW=` A/B with levels fixed. Effect: adds compositor GPU time (unpublished, Q3-020). It pays off only if it lets you lower eye-buffer scale for the same clarity, so average app GPU time falls only with a matching render-scale cut; no variance effect. Tags: `Quest 2` `Quest 3/3S` `Meta XR Core SDK` compositor-side; API not stated (Q3-017) · **Throughput** (indirect).
 
 ## Verify
 
-- **FFR:** with `debug.oculus.foveation.dynamic 0` and levels fixed, `app_gpu_time_microseconds` should fall stepwise from level 0 to 3; Meta's example is roughly 6.5 / 11.5 / 21% of GPU utilisation (Q3-022). Logcat `Fov=N` matches the set level; `ovrgpuprofiler -t -v` shows reduced `Fov` values on peripheral bins of the eye surface. 20 s per level on a static view is enough.
+- **FFR:** with `debug.oculus.foveation.dynamic 0` and levels fixed, `app_gpu_time_microseconds` should fall stepwise from level 0 to 3; Meta's example is roughly 6.5 / 11.5 / 21% of GPU utilisation (Q3-022). Logcat `Fov=N` matches the set level; `ovrgpuprofiler -t -v` shows reduced `Fov` values on peripheral bins of the eye surface. No published dwell time; 20 s per level on a static view is a working choice, extend if `app_gpu_time_microseconds` has not settled.
 - **Resolution:** `SF=` and CSV `eye_buffer_width/height` match the intended scale; GPU time falls roughly with pixel count if fill-bound [verify on device].
 - **Symmetric Projection / MVRR:** A/B GPU time in a GPU-bound scene; expect within Meta's 5-15% / 3-8% ranges, or less with heavy post [verify on device].
 - **Dynamic resolution:** over a 20-30 minute session (see `quest-perf:quest-levels-thermal` for the protocol), stale frames per minute should stay flat while CSV `render_scale` absorbs thermal events; check `render_scale` ≥ 85% for most of the session (VRC Perf.4). Run `ovr_metrics_csv.py` from `quest-perf:quest-profiling-toolkit` for the first-vs-last-5-minutes drift report.
