@@ -40,7 +40,7 @@ When not:
    - `Tear` > 0 means the compositor was too slow, usually from too many layers. That is not app pacing; see `quest-perf:quest-compositor-layers`.
 3. **Session CSV.** Record an OVR Metrics CSV (Basic preset, no HUD, no casting) along a scripted route and mark segments with `AppendCsvDebugString` (Q1-094, Q1-020). Pacing columns (Q1-014): `stale_frame_count`, `stale_frames_consecutive`, `max_repeated_frames`, `skipped_frames`, `early_frame_count`, `screen_tear_count`, `phase_sync_mode`, `extra_latency_mode`, `icfl_mean/stdev_microseconds`, `slice_headroom_mean/stdev_microseconds`, `app_frame_throttle`. Meta publishes no definitions for most of these columns; treat them as relative signals. Run `ovr_metrics_csv.py` from `quest-perf:quest-profiling-toolkit` for stale frames per minute, the maximum stale frames in any 60 s window, and p50/p95/p99. Those percentiles are computed over 1 Hz rows, not per frame (Q1-010), so use Perfetto for per-frame pacing.
 4. **Perfetto for per-frame shape.** Look at `PlayerLoop` duration on `UnityMain` and the `xrWaitFrame` / `PhaseSync` wait at its start. On pre-FrameSync builds, a `PhaseSync` idle of 1-4 ms is normal, and near 0 ms means the frame is one hitch away from stale (Q1-051). On v203+ that marker's meaning is unverified (QX-C4); use `slice_headroom_*` from the CSV instead. Do **not** reuse the stock hz-perfetto-debug stale SQL: it counts every `PlayerLoop` over 11.1 ms as stale, which hard-codes 90 Hz and confuses CPU frame time with compositor staleness (Q1-054, Q1-C7).
-5. **Periodic vs one-off.** A spike every N frames (a timer, a streaming tick, a probe or occlusion update) belongs here; stagger it (Fix 4). A first-use spike belongs to `unity-perf:unity-shader-hitches`, and a GC or physics spike to `unity-perf:unity-cpu-scripting` (Q1-094 labelling).
+5. **Periodic vs one-off.** A spike every N frames (a timer, a streaming tick, a probe or occlusion update) belongs here; stagger it (Fix 2). A first-use spike belongs to `unity-perf:unity-shader-hitches`, and a GC or physics spike to `unity-perf:unity-cpu-scripting` (Q1-094 labelling).
 6. **In-build counter (release builds).** `XRDisplaySubsystem.TryGetDroppedFrameCount` / `TryGetFramePresentCount` / `TryGetDisplayRefreshRate` per frame, logged as deltas (U5-091). Whether the Meta OpenXR provider fills every stat is [verify on device]. `unity-perf:unity-profiling-workflow` owns the in-app stats hooks.
 
 ## Key numbers
@@ -49,7 +49,7 @@ When not:
 |---|---|---|---|
 | Frame budget | 72 Hz 13.9 ms, 90 Hz 11.1 ms, 120 Hz 8.3 ms, 207 Hz 4.8 ms, 240 Hz 4.2 ms | Q2-009 [doc] | `Quest 2` `Quest 3/3S` (207/240 `Quest 3` only) |
 | Runtime default refresh | 72 Hz unless the app requests another rate | Q2-010 [doc] | all Quest, all Unity |
-| Supported rates | Quest 2: 60 (media apps only), 72, 80, 90, 96, 100, 120. Quest 3: 72, 80, 90, 96, 100, 120, plus any integer 72-207 Hz. Quest 3S: 72-120 only, including 96/100 | Q2-010, Q2-013, Q2-089 [doc] | HorizonOS v2.7+ for the Quest 3 extended rates |
+| Supported rates | Quest 2: 60 (media apps only), 72, 80, 90, 96, 100, 120. Quest 3: 72, 80, 90, 96, 100, 120, plus any integer 72-207 Hz. Quest 3S: 72-120 only, including 96/100 | Q2-010, Q2-013, Q2-089 [doc] | `Quest 2` `Quest 3/3S`; extended rates `Quest 3` only, HorizonOS v2.7+ (Q2-013) |
 | 240 Hz | developer mode plus `debug.oculus.forceDisplayScaling 1` and `debug.oculus.refreshRate 240`; the panel upscales above 207 Hz | Q2-013 [doc] | `Quest 3`, dev only, never ship |
 | Thermal refresh drop | step 1: an app above 72 Hz drops to 72 Hz; step 2: refresh unchanged, app frame rate halved (like minVsyncs=2) | Q2-014 [doc] | all Quest |
 | Stale-frame rate heuristic | good < 5%, warning > 10%, critical > 25% | Q1-053 [doc] (Meta agent skill, not a VRC) | `Quest 2` `Quest 3/3S` |
@@ -65,14 +65,14 @@ The CPU/GPU headroom rule (70% / 80% / hitches under 3%) belongs to `quest-perf:
 ## Fixes, ranked by payoff ÷ effort
 
 ### 1. Set the refresh rate explicitly, from the runtime's list, and survive a runtime drop
-**Goal:** Consistency (and Throughput when you drop a rate the content cannot hold). `Quest 2` `Quest 3/3S` `Unity 2021.3+` (Meta XR Core SDK) / `Unity 2022.3+` (OpenXR: Meta)
+**Goal:** Consistency (and Throughput when you drop a rate the content cannot hold). `Quest 2` `Quest 3/3S` `Unity ≥ 6000.0.66f2` for current Meta XR Core SDK (older SDK versions on 2021.3/2022.3; see `unity-perf:unity-version-matrix`) / `Unity 2022.3+` (OpenXR: Meta)
 
 - The runtime runs at 72 Hz unless you ask for more (Q2-010). Unity's e-book says "most XR devices enforce Vsync at 90 Hz or higher", which is wrong for Quest; the Vsync-is-runtime-enforced part is right (UNITY-GF1-009, UNITY-GF1-C2). `QualitySettings.vSyncCount` and `Application.targetFrameRate` are ignored in VR (U5-008).
 - Choose the highest rate whose budget (Key numbers) the content holds with stale near 0 at the level you design to. Moving from 72 to 90 Hz takes 2.8 ms of budget away, so p99 has to fit 11.1 ms.
 - Gate on the runtime-reported list, not on the device family. A rate is available only if the manifest's `com.oculus.supportedDevices` lists a device that supports it; compatibility mode limits it further (Q2-015). Check the merged AndroidManifest in every build: the refresh-rate page's "Unity auto-adds `quest|quest2`" is stale, and the canonical value is `quest2|questpro|quest3|quest3s` (Q2-C12).
 - Effect: a correct rate removes the systematic judder you get from running content above what it holds. A higher rate lowers `Prd` (Q2-069). Cost: less budget per frame, more heat.
 
-Meta XR Core SDK path (`Unity 2021.3+`) (Q2-011):
+Meta XR Core SDK path (`Unity ≥ 6000.0.66f2` for current Meta XR Core SDK (older SDK versions on 2021.3/2022.3; see `unity-perf:unity-version-matrix`); U1-008) (Q2-011):
 ```csharp
 using System;
 using UnityEngine;
@@ -143,62 +143,12 @@ Both calls return false when the feature is off or the rate is not in the suppor
 Rehearse the thermal drop on every quality tier:
 `adb shell am broadcast -a com.oculus.vrruntimeservice.COMPOSITOR_SIMULATE_THERMAL --es subsystem refresh --ei seconds_throttled 10` (Q2-014). Anything that assumes a fixed `Time.deltaTime`, fixed-timestep physics or refresh-locked animation must survive a 90/120 to 72 Hz change. The right `fixedDeltaTime` on Quest is an open conflict (U5-C4, UNITY-GF1-C3): measure physics steps per frame and judder at each rate [verify on device]; `unity-perf:unity-cpu-scripting` owns physics.
 
-### 2. Confirm FrameSync is active and remove Phase Sync assumptions
-**Goal:** Consistency. `Quest 2` `Quest 3/3S` `HzOS v203+` all Unity versions, `GLES` `Vulkan`
-
-- FrameSync is the default frame-timing algorithm for every app on every supported device from v203. It needs no integration, and Phase Sync API calls are no-ops (Q2-071, QUEST-GF1-007). It can be tested from v201 with `<meta-data android:name="com.oculus.enable_frame_sync" android:value="true"/>` (Q2-072, A1-039).
-- It is a frame-start scheduler: it trades latency against GPU time so the frame finishes just before display. It works together with AppSW, which is not deprecated (QUEST-GF2-003).
-- Action: nothing to enable on v203+. Remove Phase Sync setup at your convenience. Re-baseline CPU frame timings across v203, because frame start moved relative to vsync (A1-039).
-- Cost: slightly higher CPU/GPU use, battery and heat (Q2-072); no number published. Measure with a same-route CSV before and after the OS update.
-- **Opt-out: do not build a fix around it.** The blog promised an opt-out, but the essentials page documents none. `com.oculus.enable_frame_sync=false` comes only from UploadVR and a forum post that never reported it working (QUEST-GF1-007, QUEST-GF2-001, QUEST-GF1-C1) [verify on device]. If a title regresses under FrameSync, A/B with `false` and confirm the mode actually changed via CSV `phase_sync_mode` before trusting the result. `phase_sync_mode=4` in Aug 2026 Quest 3 captures probably marks FrameSync, but no Meta page defines the values (QUEST-GF2-002) [verify on device].
-
-Read [references/framesync.md](references/framesync.md) when you need the OS-version timeline, the manifest keys, the legacy Phase Sync setup for pre-v203 OS builds, the `Lat=` and `phase_sync_mode` verification steps, or the OXPB-115 checkbox bug on older Oculus XR versions.
-
-### 3. OpenXR Latency Optimization: Prioritize Input Polling
-**Goal:** Consistency (pose freshness; fewer one-frame-stale poses). `Quest 2` `Quest 3/3S` `Unity 6.x` `OpenXR plugin 1.x` (Meta Quest validation rule from 1.15.0-pre.1)
-
-- **Conflict (U5-C2):** Unity's OpenXR 1.18 manual defaults to **Prioritize Rendering**, which minimises simulate-to-submit time (U5-092). Meta recommends **Prioritize Input Polling** for Quest: `xrWaitFrame` runs on the main thread before simulation, so poses use the latest predicted display time. Prioritize Rendering moves the wait to the render thread and can give poses one frame stale (Q2-076, Q4-061, U1-092). OpenXR 1.15.0-pre.1 added a Meta Quest validation rule steering to Input Polling (U5-093). The dossier resolves this for Quest in Meta's favour. Keep Meta's setting unless a same-route A/B of stale frames per minute and `Prd` says otherwise.
-- Path: Project Settings > XR Plug-in Management > OpenXR (Android tab) > Latency Optimization (Q4-055). It is build-time only; runtime changes are ignored (U5-092).
-- Effect: no published change to average frame time; the benefit is pose freshness and fewer one-frame-stale poses (lower `Prd`, Q2-076). Measure stale frames per minute and `Prd` on the same route. Quality cost: none documented; the wait moves from the render thread to the main thread, so main-thread timings shift.
-- Side effect: the frame wait moves between threads, so Perfetto and Profiler markers shift. Re-read wait placement in captures after changing it.
-- Migrating from Oculus XR (deprecated from Unity 6.5) to OpenXR: check this setting, because Input Polling matches the Oculus XR default (Q2-076).
-
-Build guard (Editor folder; `OpenXRSettings.latencyOptimization` is confirmed in the OpenXR 1.18 manual (U5-092); whether older 1.x versions have the property is unverified, so confirm it compiles on your plugin version):
-```csharp
-#if UNITY_EDITOR
-using UnityEditor;
-using UnityEditor.Build;
-using UnityEditor.Build.Reporting;
-using UnityEngine;
-using UnityEngine.XR.OpenXR;
-
-sealed class QuestLatencyOptimizationGuard : IPreprocessBuildWithReport
-{
-    public int callbackOrder => 0;
-
-    public void OnPreprocessBuild(BuildReport report)
-    {
-        if (report.summary.platform != BuildTarget.Android) return;
-        var settings = OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Android);
-        if (settings == null) return;
-        if (settings.latencyOptimization != OpenXRSettings.LatencyOptimization.PrioritizeInputPolling)
-        {
-            // For an A/B build, comment this out instead of changing the default.
-            settings.latencyOptimization = OpenXRSettings.LatencyOptimization.PrioritizeInputPolling;
-            EditorUtility.SetDirty(settings);
-            Debug.LogWarning("[pacing] OpenXR Latency Optimization set to Prioritize Input Polling (Meta Quest guidance).");
-        }
-    }
-}
-#endif
-```
-Untested here: Unity cannot run in this repo.
-
-### 4. Stagger periodic work across frames
+### 2. Stagger periodic work across frames
 **Goal:** Consistency (p99, `Stale2/5`). `Quest 2` `Quest 3/3S` all Unity versions and APIs
 
 - Meta: FrameSync absorbs variable frame cost, but still advises spreading expensive work across frames and keeping per-frame patterns predictable, for smoother output and lower sustained heat (Q2-063). Time-slice LOD streaming, GI probe updates and occlusion rebuilds instead of running each in a one-frame burst.
 - Effect: average frame time is unchanged or slightly higher; the periodic spike goes away. No published number; measure p99 and `Stale2/5/10/max` per segment.
+- Quality cost: none to the image; staggered work finishes over several frames, so probe, LOD and occlusion results arrive later (visible pop or late probe updates if the slice is too small). Avg: unchanged to slightly higher from queue overhead; variance: lower p99 and fewer `Stale2/5`.
 ```csharp
 using System;
 using System.Collections.Generic;
@@ -224,12 +174,66 @@ public sealed class FrameSlicer : MonoBehaviour
 ```
 Keep the enqueued delegates cached (no per-frame lambdas), or the slicer creates the GC spikes it is meant to remove. The `sliceMs` value is a placeholder: no source gives a figure. Set it from the measured headroom (`slice_headroom_mean_microseconds`, or `PhaseSync` idle on pre-v203 builds).
 
+### 3. Confirm FrameSync is active and remove Phase Sync assumptions
+**Goal:** Consistency. `Quest 2` `Quest 3/3S` `HzOS v203+` all Unity versions, `GLES` `Vulkan`
+
+- FrameSync is the default frame-timing algorithm for every app on every supported device from v203. It needs no integration, and Phase Sync API calls are no-ops (Q2-071, QUEST-GF1-007). It can be tested from v201 with `<meta-data android:name="com.oculus.enable_frame_sync" android:value="true"/>` (Q2-072, A1-039).
+- It is a frame-start scheduler: it trades latency against GPU time so the frame finishes just before display. It works together with AppSW, which is not deprecated (QUEST-GF2-003).
+- Action: nothing to enable on v203+. Remove Phase Sync setup at your convenience. Re-baseline CPU frame timings across v203, because frame start moved relative to vsync (A1-039).
+- Cost: slightly higher CPU/GPU use, battery and heat (Q2-072); no number published. Measure with a same-route CSV before and after the OS update.
+- **Opt-out: do not build a fix around it.** The blog promised an opt-out, but the essentials page documents none. `com.oculus.enable_frame_sync=false` comes only from UploadVR and a forum post that never reported it working (QUEST-GF1-007, QUEST-GF2-001, QUEST-GF1-C1) [verify on device]. If a title regresses under FrameSync, A/B with `false` and confirm the mode actually changed via CSV `phase_sync_mode` before trusting the result. `phase_sync_mode=4` in Aug 2026 Quest 3 captures probably marks FrameSync, but no Meta page defines the values (QUEST-GF2-002) [verify on device].
+
+Read [references/framesync.md](references/framesync.md) when you need the OS-version timeline, the manifest keys, the legacy Phase Sync setup for pre-v203 OS builds, the `Lat=` and `phase_sync_mode` verification steps, or the OXPB-115 checkbox bug on older Oculus XR versions.
+
+### 4. OpenXR Latency Optimization: Prioritize Input Polling
+**Goal:** Consistency (pose freshness; fewer one-frame-stale poses). `Quest 2` `Quest 3/3S` `Unity 6.x` `OpenXR plugin 1.x` (Meta Quest validation rule from 1.15.0-pre.1)
+
+- **Conflict (U5-C2):** Unity's OpenXR 1.18 manual defaults to **Prioritize Rendering**, which minimises simulate-to-submit time (U5-092). Meta recommends **Prioritize Input Polling** for Quest: `xrWaitFrame` runs on the main thread before simulation, so poses use the latest predicted display time. Prioritize Rendering moves the wait to the render thread and can give poses one frame stale (Q2-076, Q4-061, U1-092). OpenXR 1.15.0-pre.1 added a Meta Quest validation rule steering to Input Polling (U5-093). The dossier resolves this for Quest in Meta's favour. Keep Meta's setting unless a same-route A/B of stale frames per minute and `Prd` says otherwise.
+- Path: Project Settings > XR Plug-in Management > OpenXR (Android tab) > Latency Optimization (Q4-055). It is build-time only; runtime changes are ignored (U5-092).
+- Effect: no published change to average frame time; the benefit is pose freshness and fewer one-frame-stale poses (lower `Prd`, Q2-076). Measure stale frames per minute and `Prd` on the same route. Quality cost: none documented; the wait moves from the render thread to the main thread, so main-thread timings shift.
+- Side effect: the frame wait moves between threads, so Perfetto and Profiler markers shift. Re-read wait placement in captures after changing it.
+- Migrating from Oculus XR (deprecated from Unity 6.5) to OpenXR: check this setting, because Input Polling matches the Oculus XR default (Q2-076).
+- Also check Project Settings > XR Plug-in Management > OpenXR > Use OpenXR Predicted Time: on (Meta XR SDK v83+; default from OpenXR 1.17.0). It syncs Unity's clock to the OpenXR predicted display time; clock drift otherwise shows as judder when pacing is imperfect (Q4-061, U1-092, U5-093). No published number; A/B stale frames per minute and judder on the same route [verify on device]. `Unity 6.x` `OpenXR 1.17+` Goal: Consistency.
+
+Build guard (Editor folder; the `OpenXRSettings.latencyOptimization` property and the `IPreprocessBuildWithReport` pattern come from the OpenXR 1.18 manual sample (U5-092); whether older 1.x versions have the property is unverified, so confirm it compiles on your plugin version):
+```csharp
+#if UNITY_EDITOR
+using UnityEditor;
+using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
+using UnityEngine;
+using UnityEngine.XR.OpenXR;
+
+sealed class QuestLatencyOptimizationGuard : IPreprocessBuildWithReport
+{
+    public int callbackOrder => -200; // matches Unity's OpenXR 1.18 manual sample
+
+    public void OnPreprocessBuild(BuildReport report)
+    {
+        if (report.summary.platform != BuildTarget.Android) return;
+        var settings = OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Android);
+        if (settings == null) return;
+        if (settings.latencyOptimization != OpenXRSettings.LatencyOptimization.PrioritizeInputPolling)
+        {
+            // For an A/B build, comment this out instead of changing the default.
+            settings.latencyOptimization = OpenXRSettings.LatencyOptimization.PrioritizeInputPolling;
+            EditorUtility.SetDirty(settings);
+            Debug.LogWarning("[pacing] OpenXR Latency Optimization set to Prioritize Input Polling (Meta Quest guidance).");
+        }
+    }
+}
+#endif
+```
+Untested here: Unity cannot run in this repo.
+
 ### 5. Late Latching (controllers and head) on Vulkan
-**Goal:** Consistency (latency, not frame rate). `Vulkan` + Multiview only; `Quest 2` `Quest 3/3S`
+**Goal:** Consistency (latency, not frame rate). `Vulkan` + Multiview only; `Quest 2` `Quest 3/3S` `OpenXR Meta Quest Support` or `Oculus XR`, `OpenXR 1.9.1+` (for `TrySetControllerLateLatchAction`)
 
 - Updates poses just before GPU submit and removes up to one frame of pose latency. Meta calls the overhead negligible and recommends it for most apps (Q2-075, G1-036).
 - Path: OpenXR > Meta Quest Support (cog) > Late Latching (Vulkan) (Q4-055). Oculus XR / Meta XR Core SDK: `OVRManager` Late Latching, which defaults to false (Q2-075). On the Unity OpenXR side, controller late latching is `TrySetControllerLateLatchAction` (OpenXR 1.9.1+). Unity's OpenXR 1.18 Meta Quest page does not list the setting that Meta documents (Q4-C8) [verify on device].
 - Side effects: only children of tracked anchors and the view-projection matrix are patched. Scripts, simulation and physics still see the simulation-time pose, about 10 ms apart (Q4-063). Raycasts and hand-attached colliders can visibly disagree with rendered controllers, and local vs networked poses can drift slightly.
+- Effect: average frame time unchanged (Meta: overhead negligible, no number published, Q2-075); frame-time variance unchanged; the benefit is lower pose latency (`Prd`).
+- Quality cost: rendered-vs-simulated pose mismatch, about 10 ms (Q4-063).
 - **Never ship Late Latching Debug Mode** (Q2-075 / Q4-063).
 - Verify by comparing `Prd` before and after (Q2-069). GLES projects cannot use it; if it matters, that becomes an input to `gles3-perf:gles-vs-vulkan`.
 
@@ -245,7 +249,7 @@ Keep the enqueued delegates cached (no per-frame lambdas), or the slicer creates
 
 - **Stale frames:** on a fixed, scripted route, `Stale5`/`Stale10` should be 0 in every logcat line, and the CSV maximum stale count per 60 s window should fall toward 0. That window matches Store Performance Analytics (QUEST-GF2-013). Stale-frame rate should reach the "good" band (< 5%, Q1-053), aiming for 0 in steady play.
 - **Frame-time spread:** frame-time std dev under 1 ms (Q1-053 heuristic), and p95/p99 of `PlayerLoop` `dur` from Perfetto under the budget, over at least 20 s of steady play (Q1-055).
-- **Latency fixes (3, 5):** `Prd` falls. No published size; record before and after on the same OS build.
+- **Latency fixes (4, 5):** `Prd` falls. No published size; record before and after on the same OS build.
 - **Mode:** record `Lat=`, `phase_sync_mode` and `extra_latency_mode` with every capture. Results are only comparable within one OS build (QX-C9).
 - **Refresh:** after the thermal broadcast, the app keeps running correctly at 72 Hz and `OVRManager.DisplayRefreshRateChanged` fires (or `TryGetDisplayRefreshRate` changes). Read the granted rate from `FPS=x/refresh` in logcat.
 - **Session length:** Prove a pacing fix on a scripted route of at least 20 s of steady play (Q1-055); no published minimum session length exists for pacing A/Bs, so repeat each route at least 3 times per build and compare stale frames per minute. [verify on device] Then run a 20-30 minute soak at the shipping rate, unplugged, battery above 50%, fixed ambient (Q2-060), to show that stale frames do not return late. If they do, and clocks or `PLS` moved, hand off to `quest-perf:quest-levels-thermal`.
