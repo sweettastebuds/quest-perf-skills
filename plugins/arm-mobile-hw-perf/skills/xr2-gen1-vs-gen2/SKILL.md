@@ -95,8 +95,8 @@ from?" Confirm that before you trust any capture or claim.
 4. **Check the GMEM class from the bin count.** Run `adb shell ovrgpuprofiler -e`,
    restart the app, then run `adb shell ovrgpuprofiler -t -v`. Read the eye-buffer
    surface line ("N WxH bins", mode). Meta's Quest 2 example is 135 bins of 96x176
-   (A2-013, ARM-GF1-006). Meta's 128x224 example needs about 2 MB of GMEM, so it
-   fits Quest 3 (A2-015, [verify on device]). How to read multiview surface lines per
+   (A2-013, ARM-GF1-006). Meta's 128x224 example is an original-Quest 1216x1344
+   surface, so it says nothing about Quest 3 GMEM (A2-015) [verify on device]. How to read multiview surface lines per
    device: `quest-perf:quest-profiling-toolkit` (A3-034).
 
 ## Key numbers
@@ -112,7 +112,7 @@ Tags: [doc] vendor docs, [measured] source's own measurement, [community] lead.
 | Max app CPU clock | 2.42 GHz (L8, Boost only); 2.84 GHz is never an app level | 2.36 GHz (L8 Boost); Boost level label conflicts (ARM-C4) | A1-003 [doc]; A1-005 set [doc] |
 | Default CPU clock (L4) | 1.48 GHz = 61% of 2.42 (derived) | 1.92 GHz = 81% of 2.36 (derived) | A1-005 set [doc] |
 | Unity 2x capacity rule (big/little) | met: A77 vs in-order A55 (capacity, not clock) | not met: identical A78C cores, clock ratio 2.36/2.05 = 1.15x | A1-049, A1-050 [doc] [verify on device] |
-| CPU ISA | Armv8.2 + fp16 + dotprod; no SVE/SVE2, no i8mm | same | A1-075 [doc]; A1-076 [measured] |
+| CPU ISA | Armv8.2-A + dotprod (A78C also v8.3 LDAPR/PAuth, v8.5 SSBS, v8.6 enhanced PAuth); fp16 and no SVE/SVE2/i8mm per Geekbench flags | same | A1-075 [doc]; A1-076 [measured] |
 | System cache | not published | 8 MB (LLC) | A1-012 [doc] |
 | GPU | Adreno 650 (A6xx gen3) | Adreno 740v3 (A7xx), Mesa id 0x43050b00 | A2-002, A2-003 [community]; A2-001 [doc] |
 | Max GPU level clock | 587 MHz (L5) | 599 MHz (L5); 640/690/492 MHz claims conflict (ARM-C3) | A1-005 set [doc] |
@@ -197,7 +197,7 @@ frame-time effect comes through the owning skill's work.
 
 ### 4. Ship one Arm64 CPU target; delete SVE/Armv9 code paths
 `Throughput` `Quest 2` `Quest 3/3S` `Burst`
-- A77 and A78C both implement Armv8.2 + fp16 + dotprod. Neither has SVE/SVE2, and
+- A77 and A78C both implement Armv8.2-A + dotprod (Arm TRM), with fp16 reported by Geekbench. Neither has SVE/SVE2, and
   Geekbench shows no i8mm on either (A1-075, A1-076). One code-generation target
   covers every Quest. Per-device CPU dispatch buys nothing.
 - Any SVE, Armv9 or i8mm path is dead code on Quest. Guard or remove it.
@@ -298,8 +298,9 @@ frame-time effect comes through the owning skill's work.
   duration; choose one and keep it the same for every A/B). Nothing app-critical runs on Quest 2 cpu0-3.
 - **Bin count:** on the main eye-buffer surface at 4x MSAA + RGBA8 + D24S8 + multiview,
   Quest 2 should show 135 bins of 96x176 for 1440x1584 (A2-013). Quest 3 bins should be
-  larger despite 1.30x the pixels: at 128x224, 1680x1760 needs about 112 bins (A2-015,
-  derived) [verify on device]. More bins than that means your per-pixel footprint is
+  larger than Quest 2's if GMEM is about 2 MB (A2-010); no published Quest 3 bin count
+  exists except UUM-149765's 63 bins of 192x256 (G2-039) [verify on device]. More bins than these
+  references at the same footprint means your per-pixel footprint is
   wider than 32 B/px/view.
 - **Matched-clock ratio (Fix 8):** a Quest 3 / Quest 2 GPU-time ratio at matched MHz
   and at shipped levels, with repeated runs per device. No published run count or

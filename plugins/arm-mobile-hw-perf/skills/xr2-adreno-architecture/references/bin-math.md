@@ -32,12 +32,12 @@ URP HDR in R11G11B10F costs no bins over LDR RGBA8; HDR in RGBA16F does (A2-014 
 | Case | Numbers | Source |
 |---|---|---|
 | Quest 2 default, 4x, RGBA8 + D24S8, multiview | 96x176 bins; 96×176×2×32 B = 1,081,344 B ≈ 1.03 MiB; 1440/96 = 15, 1584/176 = 9 -> 135 bins | A2-013, ARM-GF1-006 [doc] `Quest 2` |
-| Meta profiler example, 1216x1344, 32-bit colour, 24-bit depth, 4x | 60 bins of 128x224; 128×224×32×2 ≈ 1.75 MiB, which only fits ~2 MB GMEM, so likely Quest 3. At 128x224, 1680x1760 -> 14×8 = 112 bins (derived) | A2-015 [doc] `Quest 3/3S` (inferred) |
+| Meta profiler example, 1216x1344, 32-bit colour, 24-bit depth, 4x | 60 bins of 128x224 (10×6, one view). 1216x1344 is the original Quest's default eye buffer; 128×224×32 B ≈ 0.875 MiB per view fits 1 MB GMEM. Not evidence about Quest 3 | A2-015 [doc] original-Quest era |
 | Unity 6 eye buffer, Quest 3, 4x | 63 bins of 192x256 (UUM-149765). Derived: 1680/192 -> 9, 1760/256 -> 7, 9×7 = 63; 192×256×32×2 = 3,145,728 B = 3 MiB, or 1.5 MiB if views are not doubled | G2-039 [measured] `Quest 3/3S` `Unity 6000.x` |
 | Old bad-config example, 1216x1344, 2x MSAA | 28 bins of 320x192 | A2-054 [doc] original-Quest era |
 | Direct mode | `1 1216x1344 bins`: one bin covering the surface | A2-022 [doc] |
 
-The last two Quest 3 rows disagree on usable GMEM (about 1.75 MiB vs 3 MiB if both views are doubled). This is conflict ARM-C9 (Meta "approximately 2MB" vs kernel 3 MiB for the SD8 Gen 2 sibling). Resolve it on your device: note the colour/depth format and MSAA from Surface Information, read the bin size, and compute bytes per bin both with and without the ×2 view factor.
+The only Quest 3 bin data (UUM-149765) implies 3 MiB if both views are doubled or 1.5 MiB if not, around Meta's "approximately 2MB". This is conflict ARM-C9 (Meta "approximately 2MB" vs kernel 3 MiB for the SD8 Gen 2 sibling). Resolve it on your device: note the colour/depth format and MSAA from Surface Information, read the bin size, and compute bytes per bin both with and without the ×2 view factor.
 
 ## GMEM sizes
 

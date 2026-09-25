@@ -178,8 +178,7 @@ Quest (OUTLINE decision 33). Pin levels first with
   route to a like-for-like number (ARM-C20).
 - **GMEM on Quest 3.** Read the eye-buffer bin size from `ovrgpuprofiler -t -v` (after
   `-e` and an app restart) at a known footprint. Multiply bin width x height x views x
-  bytes per pixel (A2-013). Meta's 128x224 example at 32 B/px with two views is about
-  1.75 MiB per bin (A2-015, derived), consistent with about 2 MB of usable GMEM.
+  bytes per pixel (A2-013). Meta's 128x224 example is a 1216x1344 surface, the original Quest's default eye buffer (os-render-scale table); 128×224×32 B ≈ 0.875 MiB per view fits 1 MB of GMEM, so the example says nothing about Quest 3 GMEM (A2-015).
 - **Quest 3 vs 3S sustained headroom.** Same build, same scene, pinned levels, 30 min or
   more of OVR Metrics CSV. Record the first minute POW L leaves 0 or the maximum level
   drops, and repeat after a 20-minute cool-down at about 21 C (A3-093, A3-095). The full
