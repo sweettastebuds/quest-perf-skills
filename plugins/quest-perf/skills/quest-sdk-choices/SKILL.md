@@ -50,9 +50,9 @@ actual stack and flags before changing anything.
 2. **What the build really declares** (merged manifest, not your template):
    ```sh
    aapt2 dump xmltree --file AndroidManifest.xml Builds/app.apk \
-     | grep -E 'com\.oculus|horizonos|glEsVersion|profileable|QUAD_VIEWS'
+     | grep -A1 -E 'com\.oculus|horizonos|glEsVersion|profileable|QUAD_VIEWS'
    ```
-   Compare against [references/manifest-flags.md](references/manifest-flags.md).
+   `aapt2` prints `android:name` and `android:value` on separate `A:` lines; `-A1` keeps the `android:value` line that follows each `android:name` line (e.g. the `supportedDevices` string, `trade_cpu_for_gpu_amount`, `dualcorecpuset=true`). Compare against [references/manifest-flags.md](references/manifest-flags.md).
 3. **Did the runtime accept the level flags** (per build, after launch):
    ```sh
    adb logcat -d | grep -E 'isCPUSingleThreadedBoost|tradeCpuForGpu'
@@ -60,11 +60,11 @@ actual stack and flags before changing anything.
    `CreateClient: Value of isCPUSingleThreadedBoost is 1` / `tradeCpuForGpu is <n>` confirm dual-core / trading reached the runtime (Q1-038, A1-031, A1-032). Value 0, or no line, while the manifest carries the flag: the runtime did not apply it. Check that OVRPlugin uses the OpenXR backend, which both features require (A1-031, A1-032). What logcat prints on the legacy backend is not documented [verify on device].
 4. **PST status headless** (CI-safe; Core SDK v52+):
    ```sh
-   Unity -batchmode -quit -project <path> \
+   Unity -batchmode -quit -projectPath <path> -logFile pst.log \
      -executeMethod OVRProjectSetupCLI.GenerateProjectSetupReport \
      -reportFile pst.json -buildTarget Android
    ```
-   Read `tasksStatus[]` (uid, group, message, level, isDone) (Q4-069). The default rule list is not published; diff the report of a blank project vs yours to see the effective rules for your SDK version (Q4-070).
+   (Meta's page writes `-project`; `-projectPath` is Unity's documented flag.) Read `tasksStatus[]` (uid, group, message, level, isDone) (Q4-069). The default rule list is not published; diff the report of a blank project vs yours to see the effective rules for your SDK version (Q4-070).
 5. **Memory attributable to eye buffers** (for OBD / Offscreen Rendering Only A/B): `adb shell dumpsys meminfo <package>` TOTAL PSS, same scene, same spot, toggle on vs off. PSS limits themselves: `quest-perf:quest-budgets-tiers`.
 
 ## Key numbers
@@ -115,6 +115,8 @@ Stack decision table (Q4-050, Q4-051, Q4-052, U1-009, U1-091, U1-C3):
 - **Tags:** `Unity ≥ 6000.0` (floor 6000.0.66f2, 6.1+ recommended) `URP 17` `Vulkan` `Quest 2` `Quest 3/3S`. **Goal:** Throughput and Consistency (enables features owned elsewhere).
 
 ### 3. Set the OpenXR page to Meta's reference values
+Fixes 3-4 presuppose the OpenXR stack (Fix 2); on Oculus XR only Fix 1 and Fix 5-7 apply.
+
 Project Settings > XR Plug-in Management > OpenXR (Android) (Q4-055, Q4-061, U1-092):
 
 | Setting | Value | Why | Owner for depth |
@@ -123,13 +125,13 @@ Project Settings > XR Plug-in Management > OpenXR (Android) (Q4-055, Q4-061, U1-
 | Depth Submission Mode | None, unless AppSW or composition needs depth | depth submission costs a GPU resolve plus compositor work (Q4-061); no ms published | `quest-perf:quest-appsw` |
 | Foveated Rendering API | SRP Foveation (Unity 6+) | see Key numbers | `quest-perf:quest-resolution-foveation` |
 | Use OpenXR Predicted Time | On (SDK v83+; default from OpenXR 1.17.0) | Meta reference | `quest-perf:quest-frame-pacing` |
-| Additional Graphics Queue | Off | Meta: no GPU benefit on Quest's mobile GPU; no number published (unity-openxr-settings page) | measure |
+| Additional Graphics Queue | Off | Meta: adds CPU overhead from queue management with no measurable GPU gain on Quest; no ms published (unity-openxr-settings, refetched 2026-09-24) | measure |
 | Latency Optimization | Meta: Prioritize Input Polling | conflicts with Unity default (U5-C2) | `quest-perf:quest-frame-pacing` |
 | Offscreen Rendering Only | On (Vulkan) | ~10-20 MB | see fix 4 |
 | Space Warp MV format (Meta Quest Support) | RG16f | half MV bandwidth vs RGBA16f (Q4-062) | `quest-perf:quest-appsw` |
 
 - **Effect:** Depth Submission None lowers average GPU time by one resolve and compositor depth work (no number; measure `app_gpu_time_microseconds` A/B). The rest are latency, memory or feature gates.
-- **Tags:** `Unity ≥ 6000.0` `OpenXR ≥ 1.14` `Vulkan` (Offscreen Rendering Only, OBD, Symmetric Projection, Late Latching) `Quest 2` `Quest 3/3S`. **Goal:** Throughput (depth submission, multiview) and Consistency (latency, memory).
+- **Tags:** `Unity ≥ 6000.0` `OpenXR ≥ 1.14` `Vulkan` (Offscreen Rendering Only, OBD, Symmetric Projection, Late Latching) `Quest 2` `Quest 3/3S`. **Goal:** Throughput (depth submission, multiview), Throughput (CPU) (Additional Graphics Queue off) and Consistency (latency, memory).
 
 ### 4. Turn on Offscreen Rendering Only
 - **Change:** OpenXR (Android) page > Offscreen Rendering Only = on (Q4-055, Q4-061).
@@ -142,10 +144,9 @@ Project Settings > XR Plug-in Management > OpenXR (Android) (Q4-055, Q4-061, U1-
 - **Change:** open PST via Window > Meta > Tools > Project Setup Tool (or Edit > Project Settings > Meta XR). Cog: enable "Required throw errors" so failing Required tasks block builds, and "Produce Report on Build" (Q4-067). Add team rules with `OVRProjectSetup.AddTask` (Q4-068); the task ID is a hash of `message`, so messages must be unique, and tasks cannot be removed once added. Put this in an `Editor` folder (asmdef users: reference the Meta XR Core SDK editor assembly). Untested here; AddTask: Core SDK v50+; PST UI: v59+ (Oculus Integration v49-57).
   ```csharp
   // Assets/Editor/QuestPerfSetupTasks.cs
-  // Enum host: the published AddTask signature types these as
-  // OVRProjectSetup.TaskLevel / OVRProjectSetup.TaskGroup. If
-  // OVRProjectSetup.TaskLevel does not resolve on your SDK version, use
-  // OVRConfigurationTask.TaskLevel / TaskGroup (as in Meta's example).
+  // Meta's page types these as OVRConfigurationTask.TaskLevel/TaskGroup;
+  // recent SDK sources expose them as OVRProjectSetup.TaskLevel/TaskGroup.
+  // Use whichever resolves on your Core SDK version [verify on device].
   using System.Linq;
   using UnityEditor;
   using UnityEngine.Rendering;
@@ -158,7 +159,7 @@ Project Settings > XR Plug-in Management > OpenXR (Android) (Q4-055, Q4-061, U1-
           // Only after the GLES-vs-Vulkan A/B (gles3-perf:gles-vs-vulkan) chose Vulkan.
           OVRProjectSetup.AddTask(
               level: OVRProjectSetup.TaskLevel.Required,
-              group: OVRProjectSetup.TaskGroup.Quality,
+              group: OVRProjectSetup.TaskGroup.Rendering,
               platform: BuildTargetGroup.Android,
               message: "[quest-perf] Android Graphics APIs must be exactly [Vulkan] (OBD, Offscreen Rendering Only, Symmetric Projection are Vulkan-only)",
               isDone: _ => !PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.Android)
@@ -174,8 +175,7 @@ Project Settings > XR Plug-in Management > OpenXR (Android) (Q4-055, Q4-061, U1-
   #if UNITY_6000_0_OR_NEWER
           OVRProjectSetup.AddTask(
               level: OVRProjectSetup.TaskLevel.Recommended,
-              // TaskGroup.XR per Q4-068 is not in Meta's published example; Quality is.
-              group: OVRProjectSetup.TaskGroup.Quality,
+              group: OVRProjectSetup.TaskGroup.XR,
               platform: BuildTargetGroup.Android,
               message: "[quest-perf] Remove com.unity.xr.oculus on Unity 6.x; use Unity OpenXR + OpenXR: Meta (Oculus XR caps Meta XR SDK at v73)",
               isDone: _ => UnityEditor.PackageManager.PackageInfo
@@ -197,11 +197,10 @@ Project Settings > XR Plug-in Management > OpenXR (Android) (Q4-055, Q4-061, U1-
 
 ### 7. Retire deprecated paths
 - **Shader Binary Cache (SBC):** doc page (updated Aug 7, 2026) carries a deprecation banner: no longer actively maintained, replacement in development (QUEST-GF1-004). Conflict QUEST-GF1-C2: Meta's GDC 2026 recap (Mar 10, 2026) still promotes SBC; the newer doc page wins. If `com.oculus.sbcpath` is in the manifest, leave it (no source says it has a cost or a benefit for Unity apps) but do not count on it for first-use hitches: Unity support was never guaranteed. Keep in-app PSO/shader warm-up (`unity-perf:unity-shader-hitches`, `gles3-perf:gles-shader-binaries`). **Replacement: not confirmed by any source** (Known unknown).
-- **Phase Sync setup:** a no-op on FrameSync OS builds (v203+); remove at convenience (Q2-071); cleanup only, zero effect on frame time. Details: `quest-perf:quest-frame-pacing`.
 - **Low Overhead Mode (GLES):** Oculus XR only, no OpenXR equivalent (Q4-058); it disappears with the plugin. See `gles3-perf:gles-driver-overhead`.
 - **Oculus XR "Use Recommended MSAA Level" (OVRManager):** Built-in RP only; for URP set MSAA in the URP asset (Q4-064). Level choice: `unity-perf:unity-urp-settings`.
 - **Effect:** none of these change average frame time directly, except that losing Low Overhead Mode on migration can raise GLES CPU time (no published number; measure render-thread time A/B with `quest-perf:quest-profiling-toolkit`).
-- **Tags:** `Quest 2` `Quest 3/3S` `Unity 2021.3-6.6`. **Goal:** SBC = Consistency (first-use hitches); Phase Sync removal = neither (cleanup); Low Overhead Mode = Throughput (GLES CPU, lost on migration); Use Recommended MSAA = Throughput and Consistency via the correct URP MSAA setting.
+- **Tags:** `Quest 2` `Quest 3/3S` `Unity 2021.3-6.6`. **Goal:** SBC = Consistency (first-use hitches); Low Overhead Mode = Throughput (GLES CPU, lost on migration); Use Recommended MSAA = Throughput and Consistency via the correct URP MSAA setting.
 
 ### 8. Unity 6.6: Adaptive Performance Basic provider for OpenXR
 Unity 6.6's untethered-XR checklist says to enable it (Q4-053). Level behaviour and whether Horizon OS honours OpenXR level hints are owned by `quest-perf:quest-levels-thermal` (open question there).
@@ -209,7 +208,7 @@ Unity 6.6's untethered-XR checklist says to enable it (Q4-053). Level behaviour 
 - **Cost:** behaviour and level interaction undocumented [verify on device].
 - **Tags:** `Unity ≥ 6000.6` `OpenXR`. **Goal:** Consistency [verify on device].
 
-Core SDK v203+ also adds an "AI Runtime Optimizer Tool" and v205 an experimental "Hands Optimizer Tool"; no behaviour or cost documentation exists (Q4-066) [verify on device].
+Core SDK v203+ also adds an "AI Runtime Optimizer Tool" and v205 an experimental "Hands Optimizer Tool"; no behaviour or cost documentation exists (Q4-066) [verify on device]. Whether this is the same product as the Runtime Optimizer is undocumented; tool usage: `quest-perf:quest-profiling-toolkit`.
 
 ## Verify
 
@@ -231,6 +230,7 @@ Core SDK v203+ also adds an "AI Runtime Optimizer Tool" and v205 an experimental
 - **Expecting OBD / Offscreen Rendering Only on GLES.** Both are Vulkan-only (Q4-055, G1-038).
 - **Setting dual-core or trading flags on the legacy OVRPlugin backend.** They need the OpenXR backend; confirm via logcat (A1-031, A1-032). Dual-core is Quest 2/Pro only; trading is Quest 3/3S only.
 - **Relying on SBC for Unity first-use hitches.** Deprecated, Unity support not guaranteed (QUEST-GF1-004).
+- **Keeping Phase Sync setup code.** Phase Sync API calls are no-ops on FrameSync OS builds (v203+) (Q2-071); owner `quest-perf:quest-frame-pacing`.
 - **Relying on the FrameSync opt-out manifest value.** `com.oculus.enable_frame_sync=false` is [community]-only and may not exist (QUEST-GF1-C1). Owner: `quest-perf:quest-frame-pacing`.
 - **"Target Devices = Quest 2 throttles Quest 3."** It does not; clocks are unchanged, but the headroom goes unused unless dynamic resolution or adaptive quality spends it (Q2-084).
 - **Trusting "Fix All" in PST blindly.** Its rule list is unpublished per SDK version (Q4-070).
@@ -267,3 +267,4 @@ All accessed 2026-09-24.
 - https://developers.meta.com/horizon/essentials/framesync/ [doc] (Q2-071, QUEST-GF1-007)
 - https://developers.meta.com/horizon/documentation/unity/os-compatibility-mode/ [doc] (Q2-081, Q2-083)
 - http://web.archive.org/web/20251209102052/https://issuetracker.unity3d.com/issues/performance-vulkan-performing-much-worse-than-opengles-due-to-excessive-buffer-copies-on-quest-2-slash-3 [community] (G1-051)
+- https://issuetracker.unity.com/api/v1.0/issues/1364 [community] (GLES3-GF2-002)
