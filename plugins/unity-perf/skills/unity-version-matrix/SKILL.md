@@ -43,11 +43,11 @@ Graph Compatibility Mode is on.
 
 1. **Editor + packages + API + Compatibility Mode.** Paste into
    `Assets/Editor/QuestVersionReport.cs` and run *Tools > Quest Perf > Version
-   Report*. Untested (Unity cannot run here); API-conservative, compiles on
-   2021.3+ by design.
+   Report*. [verify in Editor]; written to compile on 2021.3 LTS to 6.6 via
+   `#if UNITY_6000_x_OR_NEWER` guards.
 
 ```csharp
-// Assets/Editor/QuestVersionReport.cs  (untested; Unity 2021.3 LTS .. 6.6)
+// Assets/Editor/QuestVersionReport.cs  (Unity 2021.3 LTS .. 6.6; verify in Editor)
 using System.Linq;
 using System.Text;
 using UnityEditor;
@@ -187,25 +187,30 @@ unlock. Where the dossier has no number, measure with the verify protocol.
 
 ### 3. Pick 6.6 only when a 6.5+/6.6 feature pays for the short support window
 
+- **Change:** install the latest 6000.6.x (6000.6.3f1) with the Meta Quest
+  build profile active.
+
 Justified when the project needs any of:
 - Quest shader optimizations in URP Lit/SimpleLit/Shader Graph and SRP library
   functions (6.5+; U3-066). Unity publishes no ms figure (U1-036).
 - Tile-Only Mode with its validation (6.5+; U2-025).
 - Depth input attachment instead of a copied depth texture (6.6, DX12/Vulkan;
-  U2-079).
+  U2-079) `Vulkan`.
 - Shader Constant Defines per build profile, no extra variants (6.6; U3-075).
-- AppSW UI/transparent/TMP motion vectors (6000.5.0b1, 6000.6.0b6; U1-070).
-- GPU occlusion fixed (≥ 6000.6.0f1; U1-020).
+- AppSW UI/transparent/TMP motion vectors (6000.5.0b1, 6000.6.0b6; U1-070);
+  AppSW needs Vulkan (Q3-064/065) `Vulkan`.
 
 - **Effect:** Throughput (GPU) from the features; no published Quest number
-  for any of them, measure per the owning skill.
+  for any of them, measure per the owning skill. Variance: no change expected
+  beyond patch coverage, which ends when 6.7 ships (U1-001).
 - **Cost:** 6.6 is an Update release, supported only until 6.7 ships (U1-001);
   6.5 is already unpatched (U1-005). Dynamic batching obsolete (U1-022); GLES
   minimum 3.1 (U1-094); Oculus XR unsupported (U1-091); custom shaders calling
   two-argument `DistanceAttenuation` fail on 6.6 Quest builds (U1-038, detail
-  in `unity-perf:unity-upgrade-risks`).
-- **Tags:** `Unity ≥ 6000.5` / `Unity ≥ 6000.6` `URP 17.5+` `Vulkan`
-  `Quest 2` `Quest 3/3S`.
+  in `unity-perf:unity-upgrade-risks`). If on 6.5, be at ≥ 6000.5.8f1 or GPU
+  occlusion costs GPU time for no gain (U1-020).
+- **Tags:** `Unity ≥ 6000.5` / `Unity ≥ 6000.6` `URP 17.5+` `Quest 2`
+  `Quest 3/3S` (`Vulkan` only where marked above).
   **Goal:** Throughput.
 
 ### 4. Get off 2021.3 / 2022.3 when a needed fix or feature is 6.x-only
@@ -232,10 +237,11 @@ Justified when the project needs any of:
 - **Why:** it is the gate for the 6.5+ Quest shader optimizations and sets
   Vulkan, ARM64, IL2CPP, SPI (U1-053, U1-036); 6.2+ adds thin LTO for Quest
   (U1-054, no published number).
-- **Effect:** Throughput via shader optimizations and LTO; not quantified.
+- **Effect:** Throughput via shader optimizations and LTO. Avg GPU/CPU ms may
+  drop (not quantified; U1-036, U1-054); no expected effect on variance.
+- **Quality cost:** 6000.3.0a5+ Mobile quality default turns SSAO off (U1-055).
 - **Side effects:** silently switches the graphics API and XR plugin on an
-  upgraded project; check both before comparing performance (U1-053). 6.3.0a5+
-  makes Mobile quality the default (SSAO off) (U1-055).
+  upgraded project; check both before comparing performance (U1-053).
 - **Tags:** `Unity ≥ 6000.1` `Quest 2` `Quest 3/3S`. **Goal:** Throughput.
 
 ### 6. Turn off Render Graph Compatibility Mode on 6.0-6.2
@@ -248,7 +254,7 @@ Justified when the project needs any of:
   (6.3+) and Unity-native AppSW all require Render Graph (U3-038, Q3-059,
   U3-050, Q3-065).
 - **Effect:** availability only; the frame-time effect belongs to the
-  features.
+  features. Avg/variance: none by itself (availability only).
 - **Cost/side effects:** no visual change; any custom ScriptableRenderPass
   without `RecordRenderGraph` stops rendering (U1-026), so port first.
 - **Tags:** `Unity 6000.0-6000.2` `URP 17.0-17.2` `Quest 2` `Quest 3/3S`
@@ -293,12 +299,10 @@ Justified when the project needs any of:
 - **"6.3 LTS has the Quest shader optimizations."** No: 6.5+ only. U2-056 dates
   them to 6.1+; U1-036/U3-066 and the manual page (absent in 6.4 and earlier)
   say 6.5 (X-C7, resolved: profile 6.1+, optimizations 6.5+).
-- **Orthographic cameras under the Quest optimizations** need a keyword
-  override; spelling conflict X-C8: the manual and Meta (QUEST-GF2-011) write
-  `_META_QUEST_ORTHO_PROJ`; master Lit.shader declares `META_QUEST_ORTHO_PROJ`
-  (the dossier resolves X-C8 to the master-source spelling for Keyword
-  Declaration Overrides). Re-check the 6000.5/6000.6 staging Lit.shader before
-  shipping [verify on device].
+- **Orthographic cameras** need a keyword override under the 6.5+ Quest
+  optimizations; spelling conflict X-C8 (manual `_META_QUEST_ORTHO_PROJ` vs
+  master Lit.shader `META_QUEST_ORTHO_PROJ`): see
+  `unity-perf:unity-shader-authoring`.
 - **"Enable Tile-Only Mode" on 6.3/6.4.** It does not exist there (X-C10). On
   6.5+ on-tile post without Tile-Only Mode falls back to texture sampling with
   no bandwidth saving (U2-075).
@@ -324,7 +328,8 @@ Justified when the project needs any of:
 - **"2022.3 LTS is still supported."** Only the paid xLTS stream is; the
   public builds are out of support (UNITY-GF2-005).
 - **Swapchain buffer count.** `vulkanNumSwapchainBuffers` was ignored before
-  6000.0.83f1 / 6000.3.24f1 / 6000.6.0f1; leave the default (X-C5).
+  6000.0.83f1 / 6000.3.24f1 / 6000.6.0f1; leave the default (X-C5);
+  see `unity-perf:unity-urp-settings`.
 - **FrameTimingManager GPU time on XR** arrives with 6.6 (U1-057) while the
   manual still says Partial (X-C3); see `unity-perf:unity-profiling-workflow`.
 - **HDRP** is not used on Quest; one-line note in `unity-perf:unity-urp-settings`.

@@ -40,7 +40,7 @@ Streams use 6000.N = 6.N. URP 17.6 for 6.6 is inferred from Graphics `master`
 | Feature | 2021.3 | 2022.3 | 6.0 | 6.1 | 6.2 | 6.3 | 6.4 | 6.5 | 6.6 | IDs |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Render Graph | - | - | default on; upgraded projects land in Compatibility Mode | same | same; AfterRendering now after final blit | Compatibility Mode hidden behind `URP_COMPATIBILITY_MODE` | only path (Compatibility Mode and define removed) | legacy RG compiler obsolete | only path | U1-023..026, U1-C5 |
-| Native RenderPass toggle | not verified (URP 12) | yes (Vulkan) | Compatibility Mode only | same | same | same (define only) | - | - | - | U2-081 / U1-027, U2-089 |
+| Native RenderPass toggle | yes (Vulkan; U2-081) | yes (Vulkan) | Compatibility Mode only | same | same | same (define only) | - | - | - | U2-081 / U1-027, U2-089 |
 | Forward+ | - | yes; XR completeness unresolved (U1-C4); foveation in F+ from 2022.3.16f1 | yes, incl. XR | `_FORWARD_PLUS` deprecated for `_CLUSTER_LIGHT_LOOP` (shim) | same | same | same | same | same | U1-032, U1-033, UNITY-GF2-C1 |
 | Deferred+ (not recommended on Quest) | - | - | - | yes | yes | yes | yes | yes | yes | U1-034 |
 | On-tile post-processing | - | - | - | - | - | XR only, Vulkan (6000.3.0b3), renderer feature | same | all platforms; needs Tile-Only Mode or silently falls back | same; falls back on non-sRGB GLES backbuffer (6000.6.0b6) | U2-074 / U1-062, U2-075, X-C10 |
@@ -77,8 +77,8 @@ Streams use 6000.N = 6.N. URP 17.6 for 6.6 is inferred from Graphics `master`
 | Feature | 2021.3 | 2022.3 | 6.0 | 6.1 | 6.2 | 6.3 | 6.4 | 6.5 | 6.6 | IDs |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | GraphicsStateCollection | - | - | experimental (6000.0.0b15, `UnityEngine.Experimental.Rendering`); SVC fallback 6000.0.55f1 | same | same | utility methods, overrides | edit without re-trace; states from Mesh/Material | `UnityEngine.Rendering` namespace, cache-miss tracing, auto trace/prewarm settings (6000.5.0a9) | same | U3-083 / U1-045, U1-046, U1-048 |
-| Vulkan GSC warmup fix (UUM-121231) | - | - | conflict X-C1 | - | - | conflict X-C1 | yes (6000.4.0a4) | yes | yes | U1-047, U3-091, X-C1 |
-| Legacy warmup covers stereo-instanced variants | no | no | no (UUM-54697) | no | no | no | no | no | no | U1-049 |
+| Vulkan GSC warmup fix (UUM-121231) | - | - | conflict X-C1 | conflict X-C1 (stream unpatched) | conflict X-C1 (stream unpatched) | conflict X-C1 | yes (6000.4.0a4) | yes | yes | U1-047, U3-091, X-C1 |
+| Legacy warmup covers stereo-instanced variants | not recorded | not recorded | no (UUM-54697) | no | no | no | no | no | no | U1-049 |
 | `VariantsUploadedToGpuLastFrame` | - | - | - | - | - | - | - | yes | yes | U3-084 |
 
 ## E. XR plugins, frame timing, tooling
