@@ -53,7 +53,8 @@ Layer cost shows up in compositor time and layer counts, not in app GPU time
    ```
 
    Read `TW=` (compositor GPU time), `Tear=`, `LCnt=n(DRx,LMy)` (layer count
-   including system layers; LM = merged layers), `App=`, `GPU%=`. Compositor-
+   including system layers; DR = Direct Render FPS used for overlay layers;
+   LM = merged layers; doc example `LCnt=2(DR72,LM2)`), `App=`, `GPU%=`. Compositor-
    bound signature: `Tear` > 0, `TW` rising with layer count, high `LCnt`.
    `Tear` means the compositor took too long, usually from too many layers.
 
@@ -96,9 +97,9 @@ Layer cost shows up in compositor time and layer counts, not in app GPU time
 
    Reset all setprops after profiling.
 
-6. **In-app inventory** (Meta XR Core SDK path): run the audit component in
-   Fixes #1 to print every live OVROverlay with shape, type, texture size and
-   filter flags.
+6. **In-app inventory** (Meta XR Core SDK path): run the audit component
+   (Fixes #1, [references/overlay-audit.md](references/overlay-audit.md)) to
+   print every live OVROverlay with shape, type, texture size and filter flags.
 
 Reading rule: if `App=` is inside budget but `TW=` + `App=` approaches the
 frame budget, or `Tear` > 0, the fix is fewer, smaller or cheaper layers. If
@@ -140,6 +141,9 @@ Composition Layers.
 
 ## Fixes, ranked by payoff ÷ effort
 
+Tag key: "SDK v85" = Meta XR Core SDK v85 (Unity range per that SDK, not in
+dossier); every fix here is URP-independent (compositor-side).
+
 ### 1. Audit, merge and cut layers to the minimum
 
 - **Change:** combine planar UI panels into one RenderTexture on one quad
@@ -147,55 +151,17 @@ Composition Layers.
   (`OVROverlay.hidden` or disable the component) rather than leaving them
   alive at 0 alpha. Keep `LCnt` under the 15 app-layer budget; beyond the limit
   quads fall back to scene geometry but cylinders and cubemaps simply vanish.
-- **Audit component** (Meta XR Core SDK v85 API; runtime or dev build;
-  untested in Unity here):
-
-  ```csharp
-  // Requires Meta XR Core SDK (OVROverlay). Attach to any GameObject in a dev build.
-  using System.Text;
-  using UnityEngine;
-
-  public sealed class OverlayLayerAudit : MonoBehaviour
-  {
-      [SerializeField] float intervalSeconds = 5f;
-      const int AppLayerBudget = 15; // OVROverlay page; native limit is 16 incl. projection layer
-      float _next;
-
-      void Update()
-      {
-          if (Time.unscaledTime < _next) return;
-          _next = Time.unscaledTime + intervalSeconds;
-
-          var sb = new StringBuilder();
-          int active = 0, cylinders = 0, cubemaps = 0;
-          foreach (var o in OVROverlay.instances)
-          {
-              if (o == null || !o.isActiveAndEnabled || o.hidden) continue;
-              active++;
-              if (o.currentOverlayShape == OVROverlay.OverlayShape.Cylinder) cylinders++;
-              if (o.currentOverlayShape == OVROverlay.OverlayShape.Cubemap) cubemaps++;
-              Texture t = (o.textures != null && o.textures.Length > 0) ? o.textures[0] : null;
-              sb.AppendFormat("  {0}: {1}/{2} tex={3} dyn={4} bicubic={5} ssE={6} ssX={7} shE={8} shX={9} auto={10}\n",
-                  o.name, o.currentOverlayType, o.currentOverlayShape,
-                  t != null ? t.width + "x" + t.height : (o.isExternalSurface ? "external" : "none"),
-                  o.isDynamic, o.useBicubicFiltering,
-                  o.useEfficientSupersample, o.useExpensiveSuperSample,
-                  o.useEfficientSharpen, o.useExpensiveSharpen, o.useAutomaticFiltering);
-          }
-          string warn = (active > AppLayerBudget ? " OVER BUDGET" : "")
-                      + (cylinders > 1 ? " >1 CYLINDER" : "")
-                      + (cubemaps > 1 ? " >1 CUBEMAP" : "");
-          Debug.Log($"[OverlayLayerAudit] active={active}/{AppLayerBudget}{warn}\n{sb}");
-      }
-  }
-  ```
-
+- **Audit component:** `OverlayLayerAudit` (C#, SDK v85, dev build) logs
+  every live OVROverlay with shape, type, texture size, dynamic and filter
+  flags, and warns over 15 layers or more than 1 cylinder/cubemap. Read
+  [references/overlay-audit.md](references/overlay-audit.md) when you need
+  the in-app layer inventory; paste it into the project and attach it.
 - **Effect:** removes ~0.1 ms compositor time per layer removed on Quest 2 at
   L4 (Q3-079); on Quest 3/3S no published number. Mostly a variance fix: fewer
   tears and less compositor preemption of app GPU work (Q2-040).
 - **Cost:** one merged texture means one filter setting and one update rate
   for everything in it.
-- **Tags:** `Quest 2` `Quest 3/3S` `GLES` `Vulkan` ; Meta XR Core SDK ;
+- **Tags:** `Quest 2` `Quest 3/3S` `GLES` `Vulkan` ; SDK v85 ; URP-independent ;
   **Consistency**, Throughput (compositor share of GPU).
 
 ### 2. Crop every layer to its content; never ship a fullscreen transparent layer
@@ -210,7 +176,8 @@ Composition Layers.
   replaced (0.6 vs 0.1 ms, Quest 2, L4); Quest 3/3S unmeasured
   [verify on device].
 - **Cost:** none visually; more transforms to manage.
-- **Tags:** `Quest 2` `Quest 3/3S` ; **Consistency**, Throughput.
+- **Tags:** `Quest 2` `Quest 3/3S` `GLES` `Vulkan` ; SDK v85 or Unity OpenXR ;
+  URP-independent ; **Consistency**, Throughput.
 
 ### 3. Move text and UI out of the eye buffer onto a quad overlay
 
@@ -233,8 +200,8 @@ Composition Layers.
   `quest-perf:quest-resolution-foveation`.
 - **When it costs more than it saves:** small, simple, opaque UI that is cheap
   in the eye buffer, or UI that would need its own fullscreen layer. A/B it.
-- **Tags:** `Quest 2` `Quest 3/3S` `GLES` `Vulkan` ; OVROverlayCanvas
-  (Meta XR SDK) or `Unity ≥ 6000.0` + OpenXR with XR Composition Layers ;
+- **Tags:** `Quest 2` `Quest 3/3S` `GLES` `Vulkan` ; OVROverlayCanvas (SDK v85)
+  or `Unity ≥ 6000.0` + OpenXR with XR Composition Layers ; URP-independent ;
   **Throughput**, Consistency.
 
 ### 4. Prefer overlays to underlays; prefer opaque canvases
@@ -243,12 +210,14 @@ Composition Layers.
   Underlay only when scene geometry must occlude the layer.
 - **Effect:** underlays make the eye buffer punch an alpha hole
   (Underlay Transparent Occluder / Underlay Impostor shaders), which is more
-  bandwidth-heavy (Q3-081). No published ms number.
+  bandwidth-heavy (Q3-081). No published ms number. Average vs variance:
+  bandwidth saving lowers average app GPU time; no variance claim.
 - **Cost:** without Enable Depth Buffer Testing (`noDepthBufferTesting = false`)
   an overlay renders on top of everything, so hands or controllers in front
   of a panel are hidden; depth testing has no published cost, A/B `TW=`
   [verify on device].
-- **Tags:** `Quest 2` `Quest 3/3S` ; Meta XR SDK ; **Throughput**.
+- **Tags:** `Quest 2` `Quest 3/3S` `GLES` `Vulkan` ; SDK v85 ; URP-independent ;
+  **Throughput**.
 
 ### 5. Size layer textures from the CLP log and let the compositor pick filters
 
@@ -265,24 +234,28 @@ Composition Layers.
 - **Cost:** undersized textures blur; expensive filters raise compositor
   time. MQSR does not support YUV or cubemap layers, which fall back to
   bilinear (Q3-018).
-- **Tags:** `Quest 2` `Quest 3/3S` ; Meta XR Core SDK v85 (OVROverlay filter
-  dropdowns, Q3-019); OpenXR `XR_FB_composition_layer_settings` ;
+- **Tags:** `Quest 2` `Quest 3/3S` `GLES` `Vulkan` ; SDK v85 (filter dropdowns,
+  Q3-019); OpenXR `XR_FB_composition_layer_settings` ; URP-independent ;
   **Throughput**, Consistency.
 
 ### 6. Update layer textures only when content changes
 
-- **Change (OVROverlay):** keep `isDynamic = false` for static panels; enable
-  it only for content that changes every frame. For panels that change
-  occasionally, enable `isDynamic` for the frames that change, then disable it
-  [verify on device]: the SDK's handling of a one-frame toggle is not
-  documented in the dossier.
-- **Change (OpenXR):** OpenXR 1.19.0-pre.1 Dynamic Texture (needs XR
-  Composition Layers 2.6.0) transfers layer textures with CopyTexture each
-  update, a per-frame GPU copy; keep dynamic layers small (Q3-085).
+- **Change (OVROverlay):** keep `isDynamic = false` for static panels. Note:
+  the SDK sets isDynamic automatically when the texture is a RenderTexture;
+  for static panels, assign a Texture2D or turn it off after assignment
+  [verify on device] (unity-ovroverlay [doc]). Enable it only for content that
+  changes every frame; for occasional changes, enable it for the changed
+  frames, then disable it (one-frame toggle undocumented) [verify on device].
+- **Change (OpenXR, 1.19.0-pre.1, needs XR Composition Layers 2.6.0):**
+  Dynamic Texture rewrites the layer's swapchain image every frame (a
+  per-frame GPU copy; CopyTexture when preconditions are met, else Blit); keep
+  dynamic layers small and leave static layers non-dynamic (Q3-085).
 - **Effect:** removes a per-frame copy of the layer texture from app GPU time.
-  No published number; measure `App=`.
-- **Tags:** `Quest 2` `Quest 3/3S` ; OVROverlay; `Unity ≥ 6000.0`
-  `OpenXR ≥ 1.19.0-pre.1` ; **Throughput**.
+  No published number; measure `App=`. Variance: removes a recurring
+  per-frame copy, no spike claim.
+- **Cost:** panels with isDynamic off show stale content until re-enabled.
+- **Tags:** `Quest 2` `Quest 3/3S` `GLES` `Vulkan` ; OVROverlay (SDK v85);
+  `Unity ≥ 6000.0` `OpenXR ≥ 1.19.0-pre.1` ; URP-independent ; **Throughput**.
 
 ### 7. Choose the cheapest shape that works
 
@@ -293,7 +266,10 @@ Composition Layers.
   FIXED_TO_VIEW); whether a Unity OVROverlay parented to the camera rig maps
   to that flag is not documented [verify on device] with `LCnt(LM)` rising.
 - **Effect:** lower `TW=`; no published per-shape ms.
-- **Tags:** `Quest 2` `Quest 3/3S` ; **Consistency**, Throughput.
+- **Cost:** a quad instead of a cylinder gives a flat panel. The cubemap and
+  cylinder cap is 1 each.
+- **Tags:** `Quest 2` `Quest 3/3S` `GLES` `Vulkan` ; SDK v85 or Unity OpenXR ;
+  URP-independent ; **Consistency**, Throughput.
 
 ### 8. Video on a layer
 
@@ -304,22 +280,25 @@ Composition Layers.
 - **Effect:** removes the video surface draw from the eye buffer and samples
   video once (Q3-078). Whether the external-surface path also avoids an
   app-side copy is not documented in the dossier; no published number for
-  either path. A/B `App=` and `TW=`.
+  either path. A/B `App=` and `TW=`. Variance: video frames reach the
+  display at compositor rate even when the app misses frames (Q3-078):
+  Consistency.
 - **Cost:** YUV layers get no MQSR, bilinear fallback (Q3-018). Same depth
   and ordering limits as other layers.
-- **Tags:** `Quest 2` `Quest 3/3S` ; Meta XR SDK ; **Throughput**
-  [verify on device].
+- **Tags:** `Quest 2` `Quest 3/3S` `GLES` `Vulkan` ; SDK v85 ; URP-independent ;
+  **Throughput**, **Consistency** [verify on device].
 
 ### 9. System splash as a compositor layer
 
 - **Change:** Project Settings > XR Plug-in Management > OpenXR > Meta Quest
-  Support (feature settings) > System Splash Screen. It is shown as a
-  compositor layer (Q3-091). Use it rather than an in-app loading scene.
-- **Effect:** no change to average frame time; removes startup judder
-  (variance): the splash stays smooth while the first scene loads.
+  Support (gear) > Manifest Settings > System Splash Screen (a PNG in
+  Assets). It is shown as a compositor layer (Q3-091).
+- **Effect:** no change to average frame time; removes launch judder only,
+  from app start until the first submitted frame; later scene loads still
+  need their own handling (for example a fade quad layer, see Fix 2).
 - **Cost:** static splash image only; one compositor layer while shown.
 - **Tags:** `Quest 2` `Quest 3/3S` `GLES` `Vulkan` ; Unity OpenXR ;
-  **Consistency**.
+  URP-independent ; **Consistency**.
 
 ## Verify
 
@@ -372,33 +351,32 @@ shipping layer count, with margin for the next thermal step (Q2-030).
   (Q3-076). Details: `quest-perf:quest-appsw`.
 - **Overlay cameras for UI.** In URP a base camera whose stack does not
   resolve the final target forces an intermediate (U2-039); put UI in the base
-  camera or on a compositor layer instead. `URP 14+`. Owner:
+  camera or on a compositor layer instead. All URP versions (URP 14 source;
+  Tile-Only Mode lists stacking as unsupported). Owner:
   `unity-perf:unity-render-graph-tiling`.
 - **Measuring with the OVR Metrics HUD on.** The HUD is its own compositor
   layer (Q1-002); capture CSV with it off.
 
 ## Sources
 
-All accessed 2026-09-24.
-
-- https://developers.meta.com/horizon/documentation/native/android/os-compositor-layers/ [doc]; Quest 2 L4 layer costs in it are [measured] (Q3-078 to Q3-084)
-- https://developers.meta.com/horizon/documentation/unity/unity-ovroverlay/ [doc] (Q3-080, Q3-081, Q3-082, Q3-019)
-- https://developers.meta.com/horizon/reference/unity/v85/class_o_v_r_overlay/ [doc] (OVROverlay field names used in code; targeted check)
-- https://developers.meta.com/horizon/reference/unity/v85/class_o_v_r_manager/ [doc] (Q3-019)
-- https://developers.meta.com/horizon/documentation/native/android/mobile-openxr-composition-layer-filtering/ [doc] (Q3-015, Q3-016)
-- https://developers.meta.com/horizon/blog/vr-image-quality-meta-quest-super-resolution/ [doc] (Q3-017, Q3-018, Q3-020)
-- https://developers.meta.com/horizon/documentation/native/android/os-fixed-foveated-rendering/ [doc] (Q3-024)
-- https://developers.meta.com/horizon/documentation/native/android/ts-ovrstats/ [doc] (Q1-026, CSV columns)
-- https://developers.meta.com/horizon/documentation/unity/ts-logcat-stats/ [doc] (Q2-030, Q2-067, Q2-070)
-- https://developers.meta.com/horizon/documentation/unity/os-missed-frames/ [doc] (Q2-009)
-- https://developers.meta.com/horizon/documentation/unity/ts-ovrmetricstool/ [doc] (Q1-002)
-- https://developers.meta.com/horizon/documentation/unity/po-per-frame-gpu/ [doc] (Q2-039)
-- https://developers.meta.com/horizon/blog/how-to-obtain-stable-gpu-measurements-on-quest/ [doc] (Q2-040)
-- https://developers.meta.com/horizon/documentation/spatial-sdk/spatial-sdk-runtime-guidelines/ [doc] (QUEST-GF2-008)
-- https://developers.meta.com/horizon/blog/mqdh-compositor-layers-visibility-properties-functions-enhance-visual-quality-performance/ [doc] (MQDH layer tools)
-- https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.18/manual/features/compositionlayers.html [doc] (Q3-085)
-- https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.19/changelog/CHANGELOG.html [doc] (Q3-085)
-- https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.18/manual/features/metaquest.html [doc] (Q3-091)
-- https://docs.unity3d.com/6000.2/Documentation/Manual/xr-graphics-spacewarp.html [doc] (Q3-086, Q3-C9)
-- https://developers.meta.com/horizon/documentation/native/android/os-app-spacewarp/ [doc] (Q3-076, Q3-086, Q3-C9)
-- https://docs.unity3d.com/6000.6/Documentation/Manual/on-tile-rendering.html [doc] (U2-039)
+- https://developers.meta.com/horizon/documentation/native/android/os-compositor-layers/ [doc]; Quest 2 L4 layer costs in it are [measured] (Q3-078 to Q3-084) (accessed 2026-09-24)
+- https://developers.meta.com/horizon/documentation/unity/unity-ovroverlay/ [doc] (Q3-080, Q3-081, Q3-082, Q3-019) (accessed 2026-09-24)
+- https://developers.meta.com/horizon/reference/unity/v85/class_o_v_r_overlay/ [doc] (not in dossier; API names verified by reviewer refetch 2026-09-24) (accessed 2026-09-24)
+- https://developers.meta.com/horizon/reference/unity/v85/class_o_v_r_manager/ [doc] (Q3-019) (accessed 2026-09-24)
+- https://developers.meta.com/horizon/documentation/native/android/mobile-openxr-composition-layer-filtering/ [doc] (Q3-015, Q3-016) (accessed 2026-09-24)
+- https://developers.meta.com/horizon/blog/vr-image-quality-meta-quest-super-resolution/ [doc] (Q3-017, Q3-018, Q3-020) (accessed 2026-09-24)
+- https://developers.meta.com/horizon/documentation/native/android/os-fixed-foveated-rendering/ [doc] (Q3-024) (accessed 2026-09-24)
+- https://developers.meta.com/horizon/documentation/native/android/ts-ovrstats/ [doc] (Q1-026, CSV columns) (accessed 2026-09-24)
+- https://developers.meta.com/horizon/documentation/unity/ts-logcat-stats/ [doc] (Q2-030, Q2-067, Q2-070) (accessed 2026-09-24)
+- https://developers.meta.com/horizon/documentation/unity/os-missed-frames/ [doc] (Q2-009) (accessed 2026-09-24)
+- https://developers.meta.com/horizon/documentation/unity/ts-ovrmetricstool/ [doc] (Q1-002) (accessed 2026-09-24)
+- https://developers.meta.com/horizon/documentation/unity/po-per-frame-gpu/ [doc] (Q2-039) (accessed 2026-09-24)
+- https://developers.meta.com/horizon/blog/how-to-obtain-stable-gpu-measurements-on-quest/ [doc] (Q2-040) (accessed 2026-09-24)
+- https://developers.meta.com/horizon/documentation/spatial-sdk/spatial-sdk-runtime-guidelines/ [doc] (QUEST-GF2-008) (accessed 2026-09-24)
+- https://developers.meta.com/horizon/blog/mqdh-compositor-layers-visibility-properties-functions-enhance-visual-quality-performance/ [doc] (MQDH layer tools) (accessed 2026-09-24)
+- https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.18/manual/features/compositionlayers.html [doc] (Q3-085) (accessed 2026-09-24)
+- https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.19/changelog/CHANGELOG.html [doc] (Q3-085) (accessed 2026-09-24)
+- https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.18/manual/features/metaquest.html [doc] (Q3-091) (accessed 2026-09-24)
+- https://docs.unity3d.com/6000.2/Documentation/Manual/xr-graphics-spacewarp.html [doc] (Q3-086, Q3-C9) (accessed 2026-09-24)
+- https://developers.meta.com/horizon/documentation/native/android/os-app-spacewarp/ [doc] (Q3-076, Q3-086, Q3-C9) (accessed 2026-09-24)
+- https://docs.unity3d.com/6000.6/Documentation/Manual/on-tile-rendering.html [doc] (U2-039) (accessed 2026-09-24)

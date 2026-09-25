@@ -16,7 +16,7 @@ Reference for `quest-perf:quest-compositor-layers`. All sources accessed
 | ReconstructionPassthrough, SurfaceProjectedPassthrough, KeyboardHandsPassthrough, KeyboardMaskedHandsPassthrough | passthrough | not stated | see `quest-perf:quest-mr-costs` | n/a | Passthrough is rendered by a system service into a compositor layer (Q4-010) |
 
 Sources: shape list and field names from
-https://developers.meta.com/horizon/reference/unity/v85/class_o_v_r_overlay/ [doc];
+https://developers.meta.com/horizon/reference/unity/v85/class_o_v_r_overlay/ [doc] (not in dossier; API names verified by reviewer refetch 2026-09-24);
 limits and fallback from https://developers.meta.com/horizon/documentation/unity/unity-ovroverlay/ [doc] (Q3-080);
 relative cost from https://developers.meta.com/horizon/documentation/native/android/ts-ovrstats/ and
 https://developers.meta.com/horizon/documentation/unity/ts-logcat-stats/ [doc] (Q1-026 / Q2-067 / Q2-070);
@@ -74,7 +74,7 @@ Projection-layer (eye-buffer) filtering is `OVRManager.sharpenType`, owned by
 | Install XR Composition Layers package; enable OpenXR feature "Composition Layer Support" | OpenXR plugin 1.18 docs | https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.18/manual/features/compositionlayers.html [doc] |
 | Custom layer types via `OpenXRCustomLayerHandler<T>` | 1.18 | same |
 | Per-eye composition layers | OpenXR 1.18.0-pre.1 | https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.19/changelog/CHANGELOG.html [doc] |
-| Dynamic Texture (needs XR Composition Layers 2.6.0); texture transfer moved to CopyTexture | OpenXR 1.19.0-pre.1 | same |
+| Dynamic Texture (needs XR Composition Layers 2.6.0) rewrites the layer's swapchain image every frame (per-frame GPU copy); separately, texture transfer uses Graphics.CopyTexture when copy preconditions are met, Blit as fallback (cheaper transfer, not an extra copy) | OpenXR 1.19.0-pre.1 | same |
 | Layer-count limit specific to the package | not documented; assume runtime 15/16 | Q3-085 notes |
 | System Splash Screen shown as a compositor layer | OpenXR Meta Quest Support settings | https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.18/manual/features/metaquest.html [doc] |
 
