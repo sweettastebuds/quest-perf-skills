@@ -124,6 +124,7 @@ Notes:
 - https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.18/manual/features/metaquest.html [doc], accessed 2026-09-24
 - https://docs.unity3d.com/6000.2/Documentation/Manual/xr-graphics-spacewarp.html [doc], accessed 2026-09-24
 - https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.19/changelog/CHANGELOG.html [doc], accessed 2026-09-24
+- https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/changelog/CHANGELOG.html [doc], accessed 2026-09-24 (Q4-058)
 - https://unity.com/releases/editor/whats-new/6000.1.0a8, https://unity.com/releases/editor/whats-new/6000.5.0b1, https://unity.com/releases/editor/whats-new/6000.6.0b6, https://unity.com/releases/editor/whats-new/6000.0.50f1 [doc], accessed 2026-09-24
 - https://developers.meta.com/horizon/documentation/unity/vulkan-subpasses/ [doc], accessed 2026-09-24
 - https://developers.meta.com/horizon/documentation/native/android/os-app-spacewarp/ [doc], accessed 2026-09-24

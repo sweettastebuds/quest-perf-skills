@@ -41,7 +41,7 @@ Do not use; go to the sibling instead:
    ```
    An object that moves but shows gray (zero motion) in mode 4 has no MV pass. Fix its shader (see Fix 4). `quest_adb.py appsw-debug` in `quest-perf:quest-profiling-toolkit` wraps these props.
 5. **Force half rate without integrating AppSW**, to size the win: run `adb shell setprop debug.oculus.sysPropDebug 1` and then `adb shell setprop debug.oculus.swapInterval 2` (Q3-074). This shows the budget at half rate. It shows no warp quality.
-6. **Measure the MV pass cost.** The published figures conflict (see Key numbers). Take a RenderDoc Meta Fork capture and time the motion-vector pass. Or compare App GPU time with AppSW on vs off at locked levels (QUEST-GF2-007 notes). For a trace, `metavr perf analyze-trace --asw` adds the ASW view (quest.md §9.4).
+6. **Measure the MV pass cost.** The published figures conflict (see Key numbers). Take a RenderDoc Meta Fork capture and time the motion-vector pass. Or compare App GPU time with AppSW on vs off at locked levels (QUEST-GF2-007 notes). For a trace, `metavr perf analyze-trace --asw` adds the ASW view (Q1-049).
 
 ## Key numbers
 
@@ -89,7 +89,7 @@ Meta calls "Optimize Buffer Discards (Vulkan)" very important for AppSW performa
 - Path: Project Settings > XR Plug-in Management > OpenXR > Android > Meta Quest Support (gear) > Optimize Buffer Discards (Vulkan).
 - Tags: `Quest 2` `Quest 3/3S` `OpenXR 1.10.0+` / Oculus XR 1.5.0+ (Q4-058) `Vulkan`.
 - Effect: lowers the average GPU time and bandwidth. No published ms figure.
-- Quality cost: none documented. OBD itself, as a general feature, belongs to `quest-perf:quest-sdk-choices`.
+- Quality cost: Meta's OpenXR settings page says there is no downside; the Oculus XR manual warns it can break effects that sample depth, such as camera stacking (conflict Q4-C7, Q4-059). Check depth-sampling effects after enabling. OBD as a general feature belongs to `quest-perf:quest-sdk-choices`.
 
 ### 3. Set the MV format to RG16f (Throughput)
 
@@ -110,7 +110,7 @@ Meta calls "Optimize Buffer Discards (Vulkan)" very important for AppSW performa
 - **Custom HLSL, Meta fork:** `OculusMotionVectorPass` filters on `LightMode = MotionVectors`. The MV pass must use the same matrices and the same late-latching state as the eye pass. Gate extra work on `cameraData.xr.motionVectorRenderTargetValid` (Q3-067).
 - **Vertex animation** (wind, vertex-offset VFX, GPU skinning outside the SkinnedMeshRenderer): apply the same displacement to the current and the previous position, i.e. previous = current. The object then warps by head motion only instead of producing wrong vectors (Q3-071).
 - Tags: `Quest 2` `Quest 3/3S` `URP 14+` (fork) / `URP 17.0.3+` (native) `Vulkan`.
-- Effect: average GPU time rises by one geometry pass per MV-writing object (Q3-063 notes); Camera Motion Only on statics removes those draws. No frame-time variance effect. Quality: removes smear on moving objects.
+- Effect: average GPU time rises by one geometry pass per MV-writing object (Q3-063 notes); Camera Motion Only on statics removes those draws. No frame-time variance effect. Quality: removes smear on moving objects. Side effect: Camera Motion Only needs depth submission, which adds a GPU resolve plus compositor work (Q4-061, U1-092). No published ms figure; A/B App GPU and TW= with depth submission on vs off.
 
 ### 5. Re-arm on camera change and set the app-space pose every frame (Consistency)
 
@@ -237,7 +237,9 @@ All accessed 2026-09-24.
 - https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.18/manual/features/metaquest.html [doc]: OBD, MV format (Q3-069, Q3-070)
 - https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.19/manual/features/metaquest.html [doc]: RG16f halves MV bandwidth (G1-033)
 - https://developers.meta.com/horizon/documentation/unity/unity-openxr-settings/ [doc]: Meta's recommended OpenXR settings incl. Space Warp RG16f, Depth Submission None (unity.md settings summary, U1-092)
-- https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.19/changelog/CHANGELOG.html [doc]: 1.14.2 depth fix (Q3-068)
+- https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.19/changelog/CHANGELOG.html [doc]: 1.14.2 depth fix (Q3-068, Q4-058 first-version list)
+- https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/changelog/CHANGELOG.html [doc]: Oculus XR feature availability, OBD from Oculus 1.5.0 (Q4-058)
+- https://docs.unity3d.com/Packages/com.unity.xr.oculus@4.5/manual/index.html [doc]: OBD can break depth-sampling effects such as camera stacking (Q4-C7, Q4-059)
 - https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.18/manual/features/subsampledlayout.html [doc]: compositor cost with AppSW (Q3-C6)
 - https://unity.com/releases/editor/whats-new/6000.1.0a8, https://unity.com/releases/editor/whats-new/6000.5.0b1 and https://unity.com/releases/editor/whats-new/6000.6.0b6 [doc]: SpaceWarp support history (U1-070)
 - https://unity.com/releases/editor/whats-new/6000.0.50f1 [doc]: UUM-84612 (U1-079)
@@ -247,5 +249,6 @@ All accessed 2026-09-24.
 - https://developers.meta.com/horizon/documentation/unity/ts-systemproperties/ [doc]: CPU/GPU level pinning, unpin before soaks (Q1-079)
 - https://developers.meta.com/horizon/documentation/unity/unity-openxr-settings-quest/ [doc]: RG16f 4 vs 8 B/px, under 0.5 px error (G1-033, Q4-062)
 - https://developers.meta.com/horizon/documentation/native/android/os-compositor/ [doc]: Late Latching and latency with AppSW (Q3-073)
-- https://developers.meta.com/horizon/documentation/unity/unity-ovroverlay/ [doc]: `debug.oculus.logLayers` / CompositorClient flags (Q3-083)
+- https://developers.meta.com/horizon/documentation/native/android/os-compositor-layers/ [doc]: debug.oculus.logLayers / CompositorClient APP_SPACE_WARP flag (Q3-083)
+- https://github.com/meta-quest/agentic-tools (docs/metavr-cli.md) [doc] (Meta-published repo): metavr perf analyze-trace --asw (Q1-049)
 - https://www.uploadvr.com/snapdragon-xr2-gen-2/ [community]: XR2 Gen 2 offload claim, lead only (A1-024)
